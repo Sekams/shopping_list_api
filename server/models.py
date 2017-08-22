@@ -103,3 +103,33 @@ class ShoppingList(db.Model):
 
     def __repr__(self):
         return '<ShoppingList %r>' % self.title
+
+class Item(db.Model):
+    """Model for the item table"""
+    __tablename__ = 'items'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    price = db.Column(db.Integer)
+    status = db.Column(db.Boolean)
+    shopping_list_id = db.Column(db.Integer, db.ForeignKey('shoppingLists.id'))
+
+    def __init__(self, name, price, status):
+        self.name = name
+        self.price = price
+        self.status = status
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_all():
+        return Item.query.all()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def __repr__(self):
+        return '<Item %r>' % self.name
