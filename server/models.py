@@ -75,3 +75,31 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.email
+
+class ShoppingList(db.Model):
+    """Model for the shopping_list table"""
+    __tablename__ = 'shoppingLists'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(255), unique=True, nullable=False)
+    items = db.relationship('Item', backref='shoppingLists', lazy='dynamic')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    def __init__(self, title, items):
+        self.title = title
+        self.items = items
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_all():
+        return ShoppingList.query.all()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def __repr__(self):
+        return '<ShoppingList %r>' % self.title
