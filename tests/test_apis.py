@@ -110,6 +110,21 @@ class ShoppingListAPITestCase(unittest.TestCase):
         results = self.client().get('/shoppinglists/1')
         self.assertIn('Easter List', str(results.data))
 
+    def test_shopping_list_deletion(self):
+        """Test API can delete an existing shopping list. (DELETE request)."""
+        rv = self.client().post('/auth/register', data=self.user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3 = self.client().post(
+            '/shoppinglists/',
+            data={'name': 'List 1'})
+        self.assertEqual(rv_3.status_code, 201)
+        res = self.client().delete('/shoppinglists/1')
+        self.assertEqual(res.status_code, 200)
+        result = self.client().get('/shoppinglists/1')
+        self.assertEqual(result.status_code, 404)
+
     def tearDown(self):
         """Teardown all initialized variables."""
         with self.app.app_context():
