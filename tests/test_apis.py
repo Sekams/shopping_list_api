@@ -27,6 +27,14 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertIn('homie@duff.com', str(res.data))
 
+    def test_login(self):
+        """Test API can login a user (POST request)"""
+        rv = self.client().post('/auth/register', data=self.user)
+        self.assertEqual(rv.status_code, 201)
+        res = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('homie@duff.com', str(res.data))
+
     def tearDown(self):
         """Teardown all initialized variables."""
         with self.app.app_context():
