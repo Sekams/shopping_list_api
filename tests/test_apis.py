@@ -35,6 +35,16 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('homie@duff.com', str(res.data))
 
+    def test_logout(self):
+        """Test API can logout a user (POST request)."""
+        rv = self.client().post('/auth/register', data=self.user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        res = self.client().post('/auth/logout', data=self.user['email'])
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('Logout Successful', str(res.data))
+
     def tearDown(self):
         """Teardown all initialized variables."""
         with self.app.app_context():
