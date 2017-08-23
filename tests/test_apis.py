@@ -15,13 +15,17 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.shopping_list_1 = {'title': 'From Supermarket'}
         self.shopping_list_2 = {'title': 'From Farmers market'}
         self.shopping_lists = [self.shopping_list_1, self.shopping_list_2]
-        self.new_user = {'username': 'homie', 'password': 'duff',
-                         'first_name': 'Homer', 'last_name': 'Simpson'}
-        self.user = {'username': 'homie', 'password': 'duff'}
-        self.user_pw_rst = {'username': 'homie', 'new_password': 'beer'}
+        self.user = {'email': 'homie@duff.com', 'password': 'duff'}
+        self.user_pw_rst = {'email': 'homie@duff.com', 'new_password': 'beer'}
 
         with self.app.app_context():
             db.create_all()
+
+    def test_register(self):
+        """Test API can create a new user (POST request)"""
+        res = self.client().post('/auth/register', data=self.user)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('homie@duff.com', str(res.data))
 
     def tearDown(self):
         """Teardown all initialized variables."""
