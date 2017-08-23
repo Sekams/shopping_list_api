@@ -137,6 +137,26 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertIn('Sugar', str(res.data))
 
+    def test_shopping_list_item_editing(self):
+        """Test API can edit an existing shopping list item (PUT request)"""
+        rv = self.client().post('/auth/register', data=self.user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4 = self.client().post('/shoppinglists/1/items/', data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res = self.client().put(
+            '/shoppinglists/1/items/1/',
+            data={
+                "name": "Butter"
+            })
+        self.assertEqual(res.status_code, 200)
+        result = self.client().get('/shoppinglists/1/items/1/')
+        self.assertIn('Butter', str(result.data))
+
+
     def tearDown(self):
         """Teardown all initialized variables."""
         with self.app.app_context():
