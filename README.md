@@ -73,9 +73,9 @@ python run.py
 * Shopping list item creation, management and deletion
 
 ## EndPoints
+
 | Type | API EndPoint | Public Access | Description |
 | --- | --- | --- | --- |
-
 | POST | /auth/register | TRUE | Registers a user and takes **username**, **email** and **password** as arguments |
 | POST | /auth/login | TRUE | Logs regitered users in and takes **username** and **password** as arguments |
 | POST | /auth/logout | TRUE | Logs logged in users out |
