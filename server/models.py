@@ -1,37 +1,45 @@
 """This module defines the models of the application"""
-import jwt
-import datetime
-from server import create_app, db, bcrypt
+from datetime import datetime, timedelta
+from server import create_app, db
+from flask_bcrypt import Bcrypt
 from instance import instance
+import jwt
 
 app = create_app(instance)
 
+
 class User(db.Model):
     """Model for the user table"""
+
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     shopping_lists = db.relationship(
-        'ShoppingList', backref='users', lazy='dynamic')
+        'ShoppingList', order_by='ShoppingList.id', cascade="all, delete-orphan")
 
-    def __init__(self, email, password, shopping_lists):
+    def __init__(self, username, email, password):
+        self.username = username
         self.email = email
-        self.password = bcrypt.generate_password_hash(
-            password, app.config.get('BCRYPT_LOG_ROUNDS')
-        ).decode()
-        self.shopping_lists = shopping_lists
+        self.password = Bcrypt().generate_password_hash(password).decode()
 
-    def encode_auth_token(self, user_id):
+    def validate_password(self, password):
+        """
+        Checking the password
+        """
+        return Bcrypt().check_password_hash(self.password, password)
+
+    def generate_auth_token(self, user_id):
         """
         Generates the Auth Token
         :return: string
         """
         try:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
-                'iat': datetime.datetime.utcnow(),
+                'exp': datetime.utcnow() + timedelta(minutes=5),
+                'iat': datetime.utcnow(),
                 'sub': user_id
             }
             return jwt.encode(
@@ -40,7 +48,7 @@ class User(db.Model):
                 algorithm='HS256'
             )
         except Exception as e:
-            return e
+            return str(e)
 
     @staticmethod
     def decode_auth_token(auth_token):
@@ -50,7 +58,7 @@ class User(db.Model):
         :return: integer|string
         """
         try:
-            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
+            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'), algorithms=['HS256'])
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
                 return 'Token blacklisted. Please log in again.'
@@ -65,16 +73,6 @@ class User(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    @staticmethod
-    def get_all():
-        return User.query.all()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    def __repr__(self):
-        return '<User %r>' % self.email
 
 class ShoppingList(db.Model):
     """Model for the shopping_list table"""
@@ -82,27 +80,29 @@ class ShoppingList(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(255), unique=True, nullable=False)
-    items = db.relationship('Item', backref='shoppingLists', lazy='dynamic')
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    items = db.relationship('Item', order_by='Item.id',
+                            cascade="all, delete-orphan")
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
 
-    def __init__(self, title, items):
+    def __init__(self, title, user_id):
         self.title = title
-        self.items = items
+        self.user_id = user_id
 
     def save(self):
         db.session.add(self)
         db.session.commit()
 
     @staticmethod
-    def get_all():
-        return ShoppingList.query.all()
+    def get_all(user_db_id):
+        return ShoppingList.query.filter_by(user_id=user_db_id)
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
     def __repr__(self):
-        return '<ShoppingList %r>' % self.title
+        return '<ShoppingList {}}>'.format(self.title)
+
 
 class Item(db.Model):
     """Model for the item table"""
@@ -112,7 +112,7 @@ class Item(db.Model):
     name = db.Column(db.String(50), unique=True, nullable=False)
     price = db.Column(db.Integer)
     status = db.Column(db.Boolean)
-    shopping_list_id = db.Column(db.Integer, db.ForeignKey('shoppingLists.id'))
+    shopping_list_id = db.Column(db.Integer, db.ForeignKey(ShoppingList.id))
 
     def __init__(self, name, price, status):
         self.name = name
@@ -132,7 +132,8 @@ class Item(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return '<Item %r>' % self.name
+        return '<Item {}>'.format(self.name)
+
 
 class BlacklistToken(db.Model):
     """
@@ -146,7 +147,7 @@ class BlacklistToken(db.Model):
 
     def __init__(self, token):
         self.token = token
-        self.blacklisted_on = datetime.datetime.now()
+        self.blacklisted_on = datetime.now()
 
     def __repr__(self):
         return '<id: token: {}'.format(self.token)
