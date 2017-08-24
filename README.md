@@ -82,12 +82,12 @@ python run.py
 | POST | /auth/reset-password | TRUE | Changes the password of a logged in user and takes **old_password** and **new_password** as arguments |
 | POST | /shoppinglists/ | FALSE | Saves a given shopping list to the database |
 | GET | /shoppinglists/ | FALSE | Gets all shopping lists in the database |
-| GET | /shoppinglists/<id> | FALSE | Gets a shopping list with the provided id from the database |
-| PUT | /shoppinglists/<id> | FALSE | Edits shopping list with the provided id |
-| DELETE | /shoppinglists/<id> | FALSE | Removes a shopping list with the provided id from the database |
-| POST | /shoppinglists/<id>/items/ | FALSE | Saves a given shopping list item to the database |
-| PUT | /shoppinglists/<id>/items/<item_id>| FALSE | Edits shopping list item with the provided id | 
-| DELETE | /shoppinglists/<id>/items/<item_id> | FALSE | Removes a shopping list item with the provided id from the database |
+| GET | /shoppinglists/\<id\> | FALSE | Gets a shopping list with the provided id from the database |
+| PUT | /shoppinglists/\<id\> | FALSE | Edits shopping list with the provided id |
+| DELETE | /shoppinglists/\<id\> | FALSE | Removes a shopping list with the provided id from the database |
+| POST | /shoppinglists/\<id\>/items/ | FALSE | Saves a given shopping list item to the database |
+| PUT | /shoppinglists/\<id\>/items/\<item_id\>| FALSE | Edits shopping list item with the provided id | 
+| DELETE | /shoppinglists/\<id\>/items/\<item_id\> | FALSE | Removes a shopping list item with the provided id from the database |
 
 
 ## Testing
