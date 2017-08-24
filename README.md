@@ -79,7 +79,7 @@ python run.py
 | POST | /auth/register | TRUE | Registers a user and takes **username**, **email** and **password** as arguments |
 | POST | /auth/login | TRUE | Logs regitered users in and takes **username** and **password** as arguments |
 | POST | /auth/logout | TRUE | Logs logged in users out |
-| POST | /auth/reset-password | Changes the password of a logged in user and takes **old_password** and **new_password** as arguments |
+| POST | /auth/reset-password | TRUE | Changes the password of a logged in user and takes **old_password** and **new_password** as arguments |
 | POST | /shoppinglists/ | FALSE | Saves a given shopping list to the database |
 | GET | /shoppinglists/ | FALSE | Gets all shopping lists in the database |
 | GET | /shoppinglists/<id> | FALSE | Gets a shopping list with the provided id from the database |
