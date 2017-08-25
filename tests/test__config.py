@@ -18,7 +18,7 @@ class TestDevelopmentConfig(TestCase):
         self.assertTrue(app.config['DEBUG'] is True)
         self.assertFalse(current_app is None)
         self.assertTrue(
-            app.config['SQLALCHEMY_DATABASE_URI'] == 'postgresql://postgres@localhost/shopping_list_api'
+            app.config['SQLALCHEMY_DATABASE_URI'] == 'postgresql://postgres:@localhost/shopping_list_api'
         )
 
 
@@ -34,7 +34,7 @@ class TestTestingConfig(TestCase):
         self.assertFalse(app.config['SECRET_KEY'] is 'this-is-my-secret-key-dont-tell-anyone-else')
         self.assertTrue(app.config['DEBUG'])
         self.assertTrue(
-            app.config['SQLALCHEMY_DATABASE_URI'] == 'postgresql://postgres@localhost/shopping_list_api_test'
+            app.config['SQLALCHEMY_DATABASE_URI'] == 'postgresql://postgres:@localhost/shopping_list_api_test'
         )
 
 
