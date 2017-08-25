@@ -113,10 +113,11 @@ class Item(db.Model):
     status = db.Column(db.Boolean)
     shopping_list_id = db.Column(db.Integer, db.ForeignKey(ShoppingList.id))
 
-    def __init__(self, name, price, status):
+    def __init__(self, name, price, status, shopping_list_id):
         self.name = name
         self.price = price
         self.status = status
+        self.shopping_list_id = shopping_list_id
 
     def save(self):
         db.session.add(self)
