@@ -66,7 +66,10 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
-        res = self.client().post('/shoppinglists/', data=self.shopping_list_1)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/shoppinglists/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
         self.assertEqual(res.status_code, 201)
         self.assertIn('From Supermarket', str(res.data))
 
@@ -76,9 +79,12 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
-        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_2)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        rv_3 = self.client().post('/shoppinglists/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
         self.assertEqual(rv_3.status_code, 201)
-        res = self.client().get('/shoppinglists/')
+        res = self.client().get('/shoppinglists/', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
         self.assertIn('From Farmers market', str(res.data))
 
@@ -88,11 +94,15 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
-        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_1)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        rv_3 = self.client().post('/shoppinglists/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
         self.assertEqual(rv_3.status_code, 201)
         result_in_json = json.loads(rv_3.data.decode('utf-8').replace("'", "\""))
         result = self.client().get(
-            '/shoppinglists/{}'.format(result_in_json['id']))
+            '/shoppinglists/{}'.format(result_in_json['id']),
+            headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(result.status_code, 200)
         self.assertIn('From Supermarket', str(result.data))
 
@@ -102,17 +112,20 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
         rv_3 = self.client().post(
             '/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
             data={'title': 'Christmas List'})
         self.assertEqual(rv_3.status_code, 201)
         rv_4 = self.client().put(
             '/shoppinglists/1',
+            headers=dict(Authorization="Bearer " + access_token),
             data={
-                "title": "Easter List"
+                "new_title": "Easter List"
             })
         self.assertEqual(rv_4.status_code, 200)
-        results = self.client().get('/shoppinglists/1')
+        results = self.client().get('/shoppinglists/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertIn('Easter List', str(results.data))
 
     def test_shopping_list_deletion(self):
@@ -121,13 +134,15 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
         rv_3 = self.client().post(
             '/shoppinglists/',
-            data={'name': 'List 1'})
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'List 1'})
         self.assertEqual(rv_3.status_code, 201)
-        res = self.client().delete('/shoppinglists/1')
+        res = self.client().delete('/shoppinglists/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
-        result = self.client().get('/shoppinglists/1')
+        result = self.client().get('/shoppinglists/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(result.status_code, 404)
 
     def test_shopping_list_item_creation(self):
