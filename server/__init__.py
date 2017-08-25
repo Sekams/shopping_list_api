@@ -15,7 +15,8 @@ def create_app(config_name):
     def main():
         return 'Welcome to the Shopping List API!'
 
-    from .auth import auth_blueprint
+    from .auth import auth_blueprint, shoppinglists_blueprint
     app.register_blueprint(auth_blueprint)
+    app.register_blueprint(shoppinglists_blueprint)
 
     return app
