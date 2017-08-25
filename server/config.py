@@ -1,4 +1,4 @@
-postgres_local_database = "postgresql://postgres:1234@localhost/"
+postgres_local_database = "postgresql://postgres:@localhost/"
 database_name = "shopping_list_api"
 
 class BaseConfig:
