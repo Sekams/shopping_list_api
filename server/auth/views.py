@@ -2,7 +2,7 @@ from . import auth_blueprint, shoppinglists_blueprint
 
 from flask.views import MethodView
 from flask import make_response, request, jsonify, json, abort
-from server.models import db, User, ShoppingList, BlacklistToken, Bcrypt
+from server.models import db, User, ShoppingList, Item, BlacklistToken, Bcrypt
 
 
 class RegisterAPI(MethodView):
@@ -367,6 +367,143 @@ class ShoppingListIdAPI(MethodView):
                 # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
 
+class ShoppingListIdItemsAPI(MethodView):
+    """This class registers a new user."""
+
+    def post(self, id):
+        """Handle POST request for this view. Url ---> /shoppinglists/<id>/items/"""
+
+        auth_header = request.headers.get('Authorization')
+        if auth_header:
+            access_token = auth_header.split(" ")[1]
+        else:
+            access_token = ''
+        if access_token:
+            user_id = User.decode_auth_token(access_token)
+            if not isinstance(user_id, str):
+                user = User.query.filter_by(id=user_id).first()
+                if user:
+                    shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                    if not shoppinglist:
+                        # There is no bucketlist with this ID for this User, so
+                        # Raise an HTTPException with a 404 not found status code
+                        abort(404)
+
+                    name = str(request.data['name'])
+                    price = str(request.data['price'])
+                    status = str(request.data['status'])
+                    if name:
+                        if price:
+                            price = int(price)
+                        status_bool = False
+                        if status:
+                            if status.lower == 'true':
+                                status_bool = True
+                            
+                        item = Item(name=name, price=price, status=status_bool, shopping_list_id=id)
+                        item.save()
+                        response = jsonify({
+                            'id': item.id,
+                            'name': item.name,
+                            'status': item.status,
+                            'shopping_list_id': item.shopping_list_id
+                        })
+
+                        return make_response(response), 201
+
+                    return {
+                        "message": "Shopping list Item {} created".format(item.name)
+                    }, 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Invalid old password.'
+                    }
+                    return make_response(jsonify(response)), 401
+            else:
+                responseObject = {
+                    'status': 'fail',
+                    'message': user_id
+                }
+                return make_response(jsonify(responseObject)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide a valid auth token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+class ShoppingListIdItemsIdAPI(MethodView):
+    def put(self, id, item_id):
+        # get the access token from the authorization header
+        auth_header = request.headers.get('Authorization')
+        access_token = auth_header.split(" ")[1]
+
+        if access_token:
+            # Get the user id related to this access token
+            user_id = User.decode_auth_token(access_token)
+
+            if not isinstance(user_id, str):
+                shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                item = Item.query.filter_by(id=item_id).first()
+                if not shoppinglist or not item:
+                    abort(404)
+                new_name = str(request.data['new_name'])
+                new_price = str(request.data['new_price'])
+                new_status = str(request.data['new_status'])
+                if new_price:
+                    new_price = int(new_price)
+                status_bool = False
+                if new_status.lower == "true":
+                    status_bool = True
+                item.name = new_name
+                item.price = new_price
+                item.status = status_bool
+                item.save()
+                response = {
+                    'id': item.id,
+                    'name': item.name,
+                    'status': item.status,
+                    'shopping_list_id': item.shopping_list_id
+                }
+                return make_response(jsonify(response)), 200
+            else:
+                # user is not legit, so the payload is an error message
+                message = user_id
+                response = {
+                    'message': message
+                }
+                # return an error response, telling the user he is Unauthorized
+                return make_response(jsonify(response)), 401
+
+    def delete(self, id, item_id):
+        # get the access token from the authorization header
+        auth_header = request.headers.get('Authorization')
+        access_token = auth_header.split(" ")[1]
+
+        if access_token:
+            user_id = User.decode_auth_token(access_token)
+
+            if not isinstance(user_id, str):
+                shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                if not shoppinglist:
+                    abort(404)
+                item = Item.query.filter_by(id=item_id).first()
+                if not item:
+                    abort(404)
+                item.delete()
+                return {
+                    "message": "Shopping list Item {} deleted".format(item.id)
+                }, 200
+            else:
+                # user is not legit, so the payload is an error message
+                message = user_id
+                response = {
+                    'message': message
+                }
+                # return an error response, telling the user he is Unauthorized
+                return make_response(jsonify(response)), 401
+
 
 register_api = RegisterAPI.as_view('register_api')
 login_api = LoginAPI.as_view('login_api')
@@ -374,6 +511,8 @@ logout_api = LogoutAPI.as_view('logout_api')
 reset_password_api = ResetPasswordAPI.as_view('reset_password_api')
 shopping_lists_api = ShoppingListAPI.as_view('shopping_lists_api')
 shopping_lists_id_api = ShoppingListIdAPI.as_view('shopping_lists_id_api')
+shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view('shopping_lists_id_items_api')
+shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view('shopping_lists_id_items_id_api')
 
 auth_blueprint.add_url_rule(
     '/auth/register',
@@ -404,4 +543,14 @@ shoppinglists_blueprint.add_url_rule(
     '/shoppinglists/<int:id>',
     view_func=shopping_lists_id_api,
     methods=['DELETE', 'GET', 'PUT']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/shoppinglists/<int:id>/items/',
+    view_func=shopping_lists_id_items_api,
+    methods=['POST']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/shoppinglists/<int:id>/items/<int:item_id>',
+    view_func=shopping_lists_id_items_id_api,
+    methods=['PUT', 'DELETE']
 )

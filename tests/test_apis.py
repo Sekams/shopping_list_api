@@ -10,8 +10,8 @@ class ShoppingListAPITestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app('testing')
         self.client = self.app.test_client
-        self.item_1 = {'name': 'Sugar'}
-        self.item_2 = {'name': 'Salt'}
+        self.item_1 = {'name': 'Sugar', 'price': '2000', 'status': 'True'}
+        self.item_2 = {'name': 'Salt', 'price': '2000', 'status': 'True'}
         self.shopping_list_1 = {'title': 'From Supermarket'}
         self.shopping_list_2 = {'title': 'From Farmers market'}
         self.shopping_lists = [self.shopping_list_1, self.shopping_list_2]
@@ -150,10 +150,15 @@ class ShoppingListAPITestCase(unittest.TestCase):
         rv = self.client().post('/auth/register', data=self.new_user)
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
+        access_token = json.loads(rv_2.data.decode())['access_token']
         self.assertEqual(rv_2.status_code, 200)
-        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_1)
+        rv_3 = self.client().post('/shoppinglists/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
         self.assertEqual(rv_3.status_code, 201)
-        res = self.client().post('/shoppinglists/1/items/', data=self.item_1)
+        res = self.client().post('/shoppinglists/1/items/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.item_1)
         self.assertEqual(res.status_code, 201)
         self.assertIn('Sugar', str(res.data))
 
@@ -162,34 +167,45 @@ class ShoppingListAPITestCase(unittest.TestCase):
         rv = self.client().post('/auth/register', data=self.new_user)
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
+        access_token = json.loads(rv_2.data.decode())['access_token']
         self.assertEqual(rv_2.status_code, 200)
-        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_2)
+        rv_3 = self.client().post('/shoppinglists/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
         self.assertEqual(rv_3.status_code, 201)
-        rv_4 = self.client().post('/shoppinglists/1/items/', data=self.item_2)
+        rv_4 = self.client().post('/shoppinglists/1/items/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.item_2)
         self.assertEqual(rv_4.status_code, 201)
         res = self.client().put(
-            '/shoppinglists/1/items/1/',
+            '/shoppinglists/1/items/1',
+            headers=dict(Authorization="Bearer " + access_token),
             data={
-                "name": "Butter"
+                "new_name": "Butter",
+                "new_price": "2000",
+                "new_status": "False"
             })
         self.assertEqual(res.status_code, 200)
-        result = self.client().get('/shoppinglists/1/items/1/')
-        self.assertIn('Butter', str(result.data))
+        self.assertIn('Butter', str(res.data))
 
     def test_shopping_list_item_deletion(self):
         """Test API can delete an existing shopping list item (DELETE request)"""
         rv = self.client().post('/auth/register', data=self.new_user)
         self.assertEqual(rv.status_code, 201)
         rv_2 = self.client().post('/auth/login', data=self.user)
+        access_token = json.loads(rv_2.data.decode())['access_token']
         self.assertEqual(rv_2.status_code, 200)
-        rv_3 = self.client().post('/shoppinglists/', data=self.shopping_list_1)
+        rv_3 = self.client().post('/shoppinglists/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
         self.assertEqual(rv_3.status_code, 201)
-        rv_4 = self.client().post('/shoppinglists/1/items/', data=self.item_1)
+        rv_4 = self.client().post('/shoppinglists/1/items/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.item_1)
         self.assertEqual(rv_4.status_code, 201)
-        res = self.client().delete('/shoppinglists/1/items/1/')
+        res = self.client().delete('/shoppinglists/1/items/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
-        result = self.client().get('/shoppinglists/1/items/1/')
-        self.assertEqual(result.status_code, 404)
+        self.assertIn('Shopping list Item 1 deleted', str(res.data))
 
     def tearDown(self):
         """Teardown all initialized variables."""
