@@ -7,7 +7,6 @@ import jwt
 
 app = create_app(instance)
 
-
 class User(db.Model):
     """Model for the user table"""
 
