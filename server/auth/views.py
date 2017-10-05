@@ -504,6 +504,42 @@ class ShoppingListIdItemsIdAPI(MethodView):
                 # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
 
+class ShoppingListSearchAPI(MethodView):
+    def post(self):
+        # get the access token from the authorization header
+        auth_header = request.headers.get('Authorization')
+        access_token = auth_header.split(" ")[1]
+
+        if access_token:
+            # Get the user id related to this access token
+            user_id = User.decode_auth_token(access_token)
+
+            if not isinstance(user_id, str):
+                q = str(request.data['query'])
+                shoppinglists = ShoppingList.query
+                if q:
+                    shoppinglists = shoppinglists.filter(ShoppingList.title.like('%' + q + '%'))
+
+                shoppinglists = shoppinglists.order_by(ShoppingList.title).all()
+                the_lists = []
+                for a_list in shoppinglists:
+                    the_list = {
+                        'id': a_list.id,
+                        'title': a_list.title,
+                        'user_id': a_list.user_id
+                    }
+                    the_lists.append(the_list)
+                return make_response(jsonify(the_lists)), 200
+            else:
+                # user is not legit, so the payload is an error message
+                message = user_id
+                response = {
+                    'message': message
+                }
+                # return an error response, telling the user he is Unauthorized
+                return make_response(jsonify(response)), 401
+
+
 
 register_api = RegisterAPI.as_view('register_api')
 login_api = LoginAPI.as_view('login_api')
@@ -513,6 +549,8 @@ shopping_lists_api = ShoppingListAPI.as_view('shopping_lists_api')
 shopping_lists_id_api = ShoppingListIdAPI.as_view('shopping_lists_id_api')
 shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view('shopping_lists_id_items_api')
 shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view('shopping_lists_id_items_id_api')
+shopping_lists_search_api = ShoppingListSearchAPI.as_view('shopping_lists_search_api')
+
 
 auth_blueprint.add_url_rule(
     '/auth/register',
@@ -553,4 +591,9 @@ shoppinglists_blueprint.add_url_rule(
     '/shoppinglists/<int:id>/items/<int:item_id>',
     view_func=shopping_lists_id_items_id_api,
     methods=['PUT', 'DELETE']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/shoppinglists/search/shoppinglist/',
+    view_func=shopping_lists_search_api,
+    methods=['POST']
 )
