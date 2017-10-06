@@ -2,7 +2,7 @@ from . import auth_blueprint, shoppinglists_blueprint
 
 from flask.views import MethodView
 from flask import make_response, request, jsonify, json, abort
-from server.models import db, User, ShoppingList, Item, BlacklistToken, Bcrypt
+# from server.models import db, User, ShoppingList, Item, BlacklistToken, Bcrypt
 
 
 class RegisterAPI(MethodView):
