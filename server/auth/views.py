@@ -540,8 +540,8 @@ class ShoppingListSearchAPI(MethodView):
                 return make_response(jsonify(response)), 401
 
 
-class ShoppingListItemSearchAPI(MethodView):
-    def post(self):
+class ItemSearchAPI(MethodView):
+    def get(self):
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -552,20 +552,22 @@ class ShoppingListItemSearchAPI(MethodView):
 
             if not isinstance(user_id, str):
                 q = str(request.data['query'])
-                shoppinglists = ShoppingList.query
+                items = Item.query
                 if q:
-                    shoppinglists = shoppinglists.filter(ShoppingList.title.like('%' + q + '%'))
+                    items = items.filter(ShoppingList.title.like('%' + q + '%'))
 
-                shoppinglists = shoppinglists.order_by(ShoppingList.title).all()
-                the_lists = []
-                for a_list in shoppinglists:
-                    the_list = {
-                        'id': a_list.id,
-                        'title': a_list.title,
-                        'user_id': a_list.user_id
+                items = items.order_by(ShoppingList.title).all()
+                the_items = []
+                for an_item in items:
+                    the_item = {
+                        'id': an_item.id,
+                        'name': an_item.name,
+                        'price': an_item.price,
+                        'status': an_item.status,
+                        'shopping_list_id': an_item.shopping_list_id
                     }
-                    the_lists.append(the_list)
-                return make_response(jsonify(the_lists)), 200
+                    the_items.append(the_item)
+                return make_response(jsonify(the_items)), 200
             else:
                 # user is not legit, so the payload is an error message
                 message = user_id
@@ -585,6 +587,7 @@ shopping_lists_id_api = ShoppingListIdAPI.as_view('shopping_lists_id_api')
 shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view('shopping_lists_id_items_api')
 shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view('shopping_lists_id_items_id_api')
 shopping_lists_search_api = ShoppingListSearchAPI.as_view('shopping_lists_search_api')
+items_search_api = ItemSearchAPI.as_view('items_search_api')
 
 
 auth_blueprint.add_url_rule(
@@ -630,5 +633,10 @@ shoppinglists_blueprint.add_url_rule(
 shoppinglists_blueprint.add_url_rule(
     '/shoppinglists/search/shoppinglist/<string:q>',
     view_func=shopping_lists_search_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/shoppinglists/search/item/<string:q>',
+    view_func=items_search_api,
     methods=['GET']
 )
