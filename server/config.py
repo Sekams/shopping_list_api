@@ -27,7 +27,7 @@ class ProductionConfig(BaseConfig):
     """Production configuration."""
     SECRET_KEY = 'this-is-my-secret-key-dont-tell-anyone-else'
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = 'postgresql:///example'
+    SQLALCHEMY_DATABASE_URI = 'postgres://vaczwgnjmdzpxy:1f129d08b4f8c2d74c4eacded7ebf0f079500bfda27852750c66455f3c3eddde@ec2-54-247-123-130.eu-west-1.compute.amazonaws.com:5432/d8anijloibs5sj'
 
 app_config = {
     'development': DevelopmentConfig,
