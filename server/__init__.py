@@ -11,12 +11,10 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     db.init_app(app)
 
-    @app.route("/")
-    def main():
-        return 'Welcome to the Shopping List API!'
-
     from .auth import auth_blueprint, shoppinglists_blueprint
+    from .apiary.views import apiary
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(shoppinglists_blueprint)
+    app.register_blueprint(apiary)
 
     return app
