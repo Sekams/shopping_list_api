@@ -1,7 +1,8 @@
 var embed = new Apiary.Embed({
     "subdomain": "shoppinglistapi8",
     "preferences": {
-      "element": "#documentation"
+      "element": "#documentation",
+      "displayHttpMethods": true
     },
     "theme": {
       "fontFamily": "Ubuntu"
