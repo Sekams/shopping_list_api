@@ -1,0 +1,216 @@
+FORMAT: 1A
+HOST: https://the-real-shopping-list-api.herokuapp.com/
+
+# Shopping List API Documentation
+Documentation for the Shopping List API application.
+
+# Allowed HTTPs requests:
+<pre>
+PUT     : To create resource 
+POST    : To update resource
+GET     : To retrieve a resource or a list of resources
+DELETE  : To delete a resource
+</pre>
+
+# Description Of Usual Server Responses:
+- 200 `OK` - the request was successful (some API calls may return 201 instead).
+- 201 `Created` - the request was successful and a resource was created.
+- 204 `No Content` - the request was successful but there is no representation to return (i.e. the response is empty).
+- 400 `Bad Request` - the request could not be understood or was missing required parameters.
+- 401 `Unauthorized` - authentication failed or user doesn't have permissions for requested operation.
+- 403 `Forbidden` - access denied.
+- 404 `Not Found` - resource was not found.
+- 405 `Method Not Allowed` - requested method is not supported for resource.
+
+# Group User
+Represents user details. 
+
+---
+**User attributes:**
+
+- id `(Number)` : User unique identifier. 
+- username `(String)` : Username of the user.
+- email `(String)` : Email Address of the user.
+- password `(String)` : Password of the user.
+
+---
+## User Registration [/auth/register]
+### Register user [POST]
++ Request (application/json)
+
+        {
+            "username": "homie",
+            "email": "homie@email.com",
+            "password": "1234"
+        }
+
+## User Account Login [/auth/login]
+### Login [POST]
++ Request (application/json)
+
+        {
+            "username": "homie",
+            "password": "1234"
+        }
+
+## User Account Logout [/auth/logout]
+### Logout [POST]
++ Request (application/json)
+
+    + Header
+
+            Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+## User Password Reset [/auth/reset-password]
+### Reset password [POST]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+    + Body
+
+            {
+                "old_password": "1234",
+                "new_password": "abcd"
+            }
+
+# Group ShoppingList
+Represents shopping list details. 
+
+---
+**ShoppingList attributes:**
+
+- id `(Number)` : ShoppingList unique identifier. 
+- title `(String)` : Title of the shopping list.
+
+---
+
+# Shopping List Collection [/shoppinglists/]
+### Create a shopping list [POST]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+    + Body
+
+            {
+                "title": "My Shopping List"
+            }
+### Get all shopping lists [GET]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+# Shopping List [/shoppinglists/{id}]
+
++ Parameters
+    + id (required, Number, `1`) ... Numeric `id` of the Shopping List to perform action with.
+
+### Edit a shopping list [PUT]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+    + Body
+
+            {
+                "new_title": "My New Shopping List"
+            }
+
+### Get a shopping list [GET]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+### Delete a shopping list [DELETE]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+# Search for Shopping List [/shoppinglists/search/shoppinglist/{q}/{limit}]
+
++ Parameters
+    + q (required, String, `Shopping`) ... Multiple character `q` query that is a part of a Shopping List title.
+    + limit (required, Number, `2`) ... Numeric `limit` of the Shopping Lists to return.
+
+### Search for shopping lists [GET]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+# Group Item
+Represents shopping list item details. 
+
+---
+**Item attributes:**
+
+- id `(Number)` : Item unique identifier. 
+- name `(String)` : Name of the shopping list item.
+- price `(Number)` : Price of the shopping list item.
+- status `(Boolean)` : Status of the shopping list item.
+
+---
+
+# Shopping List Item Collection [/shoppinglists/{id}/items/]
+
++ Parameters
+    + id (required, Number, `1`) ... Numeric `id` of the Shopping List to perform action with.
+
+### Create a shopping list item [POST]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+    + Body
+
+            {
+                "name": "My Shopping List Item",
+                "price": "1000",
+                "status": "false"
+            }
+
+# Shopping List Item [/shoppinglists/{id}/items/{item_id}]
+
++ Parameters
+    + id (required, Number, `1`) ... Numeric `id` of the Shopping List to perform action with.
+    + item_id (required, Number, `1`) ... Numeric `item_id` of the Shopping List Item to perform action with.
+
+### Edit a shopping list item [PUT]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+    + Body
+
+            {
+                "new_name": "My New Shopping List Item",
+                "new_price": "2000",
+                "new_status": "true"
+            }
+
+### Delete a shopping list item [DELETE]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
+
+# Search for Shopping List Item [/shoppinglists/search/item/{q}/{limit}]
+
++ Parameters
+    + q (required, String, `Shopping`) ... Multiple character `q` query that is a part of a Shopping List Item name.
+    + limit (required, Number, `2`) ... Numeric `limit` of the Shopping List Items to return.
+
+### Search for shopping list items [GET]
++ Request (application/json)
+    + Header
+
+                Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1MDczNzkxNzgsImlhdCI6MTUwNzM3ODg3OCwic3ViIjoxfQ.HPO1Frt9eR-2Pa-8paKyUnJPcE6S69OgoIBxRGWG2OM
