@@ -20,3 +20,10 @@ def create_app(config_name):
     app.register_blueprint(shoppinglists_blueprint)
 
     return app
+
+def create_heroku_app():
+    app = FlaskAPI(__name__, instance_relative_config=True)
+    app.config.from_object(app_config['production'])
+    db.init_app(app)
+    db.create_all()
+    db.session.commit()
