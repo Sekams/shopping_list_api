@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template as view
 
-apiary = Blueprint('apiary', __name__, static_folder='static', template_folder='templates')
+apiary = Blueprint('apiary', __name__, template_folder='templates')
 
 
 @apiary.route('/')

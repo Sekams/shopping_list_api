@@ -39,6 +39,14 @@ class AuthTestCase(unittest.TestCase):
                          "You registered successfully. Please log in.")
         self.assertEqual(res.status_code, 201)
 
+    def test_registration_invalid_data(self):
+        """Test user registration with invalid data."""
+        res = self.client().post('/auth/register', data=self.user_data)
+        result = json.loads(res.data.decode())
+        self.assertEqual(result['message'],
+                         "Something went wrong. Please try again.")
+        self.assertEqual(res.status_code, 401)
+
     def test_already_registered_user(self):
         """Test that a user cannot be registered twice."""
         res = self.client().post('/auth/register', data=self.new_user_data)

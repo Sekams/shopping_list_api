@@ -13,7 +13,17 @@
     </div>
 
     <script src="https://api.apiary.io/seeds/embed.js"></script>
-    <script src="{{url_for('apiary.static', filename='apiary.js')}}"></script>
+    <script>
+        var embed = new Apiary.Embed({
+            "subdomain": "simon64",
+            "theme": {
+                "fontFamily": "Muli"
+            },
+            "customFonts": {
+                "googleFonts": "https://fonts.googleapis.com/css?family=Muli"
+            }
+        });
+    </script>
 </body>
 
 </html>
