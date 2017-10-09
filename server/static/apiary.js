@@ -1,5 +1,5 @@
 var embed = new Apiary.Embed({
-    "subdomain": "shoppinglistapi8",
+    "subdomain": "shoppinglistapidoc",
     "preferences": {
       "element": "#documentation",
       "displayHttpMethods": true

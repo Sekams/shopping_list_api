@@ -81,3 +81,13 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 401)
         self.assertEqual(
             result['message'], "Invalid username or password, Please try again")
+
+    def test_invalid_password_user_login(self):
+        """Test invalid password user can login."""
+        res = self.client().post('/auth/register', data=self.new_user_data)
+        self.assertEqual(res.status_code, 201)
+        self.user_data['password'] = '1234'
+        login_res = self.client().post('/auth/login', data=self.user_data)
+        result = json.loads(login_res.data.decode())
+        self.assertEqual(result['message'], "Invalid username or password, Please try again")
+        self.assertEqual(login_res.status_code, 401)
