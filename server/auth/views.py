@@ -33,7 +33,7 @@ class RegisterAPI(MethodView):
             except Exception as e:
                 # An error occured, therefore return a string message containing the error
                 response = {
-                    'message': str(e)
+                    'message': 'Something went wrong. Please try again.'
                 }
                 return make_response(jsonify(response)), 401
         else:
@@ -47,7 +47,7 @@ class RegisterAPI(MethodView):
 
 
 class LoginAPI(MethodView):
-    """This class-based view handles user login and access token generation."""
+    """This class handles user login and access token generation."""
 
     def post(self):
         """Handle POST request for this view. Url ---> /auth/login"""
@@ -76,16 +76,14 @@ class LoginAPI(MethodView):
         except Exception as e:
             # Create a response containing an string error message
             response = {
-                'message': str(e)
+                'message': 'Something went wrong'
             }
             # Return a server error using the HTTP Error Code 500 (Internal Server Error)
             return make_response(jsonify(response)), 500
 
 
 class LogoutAPI(MethodView):
-    """
-    Logout Resource
-    """
+    """This class handles user logout"""
 
     def post(self):
         # get auth token
@@ -111,25 +109,25 @@ class LogoutAPI(MethodView):
                 except Exception as e:
                     responseObject = {
                         'status': 'fail',
-                        'message': e
+                        'message': 'Something went wrong'
                     }
                     return make_response(jsonify(responseObject)), 200
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': resp
+                    'message': 'Provide a valid authentication token.'
                 }
                 return make_response(jsonify(responseObject)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ResetPasswordAPI(MethodView):
-    """This class registers a new user."""
+    """This class resets a user password."""
 
     def post(self):
         """Handle POST request for this view. Url ---> /auth/reset-password"""
@@ -162,19 +160,19 @@ class ResetPasswordAPI(MethodView):
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Provide a valid authentication token.'
                 }
                 return make_response(jsonify(responseObject)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ShoppingListAPI(MethodView):
-    """This class registers a new user."""
+    """This class handles multiple shopping lists"""
 
     def post(self):
         """Handle POST request for this view. Url ---> /shoppinglists/"""
@@ -205,19 +203,19 @@ class ShoppingListAPI(MethodView):
                 else:
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'User not found'
                     }
                     return make_response(jsonify(response)), 401
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Provide a valid authentication token.'
                 }
                 return make_response(jsonify(responseObject)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
@@ -250,25 +248,29 @@ class ShoppingListAPI(MethodView):
                 else:
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'User not found'
                     }
                     return make_response(jsonify(response)), 401
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Provide a valid authentication token.'
                 }
                 return make_response(jsonify(responseObject)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ShoppingListIdAPI(MethodView):
+    """This class handles a single shopping list"""
+
     def get(self, id):
+        """Handle GET request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -284,7 +286,11 @@ class ShoppingListIdAPI(MethodView):
                 if not shoppinglist:
                     # There is no bucketlist with this ID for this User, so
                     # Raise an HTTPException with a 404 not found status code
-                    abort(404)
+                    responseObject = {
+                        'status': 'fail',
+                        'message': 'Shopping List not found.'
+                    }
+                    return make_response(jsonify(responseObject)), 404
                 response = {
                     'id': shoppinglist.id,
                     'title': shoppinglist.title,
@@ -292,15 +298,21 @@ class ShoppingListIdAPI(MethodView):
                 }
                 return make_response(jsonify(response)), 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
     def put(self, id):
+        """Handle PUT request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -316,7 +328,11 @@ class ShoppingListIdAPI(MethodView):
                 if not shoppinglist:
                     # There is no bucketlist with this ID for this User, so
                     # Raise an HTTPException with a 404 not found status code
-                    abort(404)
+                    responseObject = {
+                        'status': 'fail',
+                        'message': 'Shopping List not found.'
+                    }
+                    return make_response(jsonify(responseObject)), 404
                 new_title = str(request.data['new_title'])
 
                 shoppinglist.title = new_title
@@ -328,15 +344,21 @@ class ShoppingListIdAPI(MethodView):
                 }
                 return make_response(jsonify(response)), 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
     def delete(self, id):
+        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -352,23 +374,31 @@ class ShoppingListIdAPI(MethodView):
                 if not shoppinglist:
                     # There is no bucketlist with this ID for this User, so
                     # Raise an HTTPException with a 404 not found status code
-                    abort(404)
-
+                    responseObject = {
+                        'status': 'fail',
+                        'message': 'Shopping List not found.'
+                    }
+                    return make_response(jsonify(responseObject)), 404
                 shoppinglist.delete()
                 return {
+                    "status": "success",
                     "message": "Shopping list {} deleted".format(shoppinglist.id)
                 }, 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 class ShoppingListIdItemsAPI(MethodView):
-    """This class registers a new user."""
+    """This class handles multiple shopping list items."""
 
     def post(self, id):
         """Handle POST request for this view. Url ---> /shoppinglists/<id>/items/"""
@@ -405,36 +435,43 @@ class ShoppingListIdItemsAPI(MethodView):
                         response = jsonify({
                             'id': item.id,
                             'name': item.name,
+                            'price': item.price,
                             'status': item.status,
                             'shopping_list_id': item.shopping_list_id
                         })
-
                         return make_response(response), 201
 
-                    return {
-                        "message": "Shopping list Item {} created".format(item.name)
-                    }, 200
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Please enter Item name'
+                        }
+                        return make_response(jsonify(response)), 401
                 else:
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'User not found'
                     }
                     return make_response(jsonify(response)), 401
             else:
-                responseObject = {
+                response = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Provide a valid authentication token.'
                 }
-                return make_response(jsonify(responseObject)), 401
+                return make_response(jsonify(response)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 class ShoppingListIdItemsIdAPI(MethodView):
+    """This class handles a single shopping list item"""
+
     def put(self, id, item_id):
+        """Handle PUT request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -463,20 +500,27 @@ class ShoppingListIdItemsIdAPI(MethodView):
                 response = {
                     'id': item.id,
                     'name': item.name,
+                    'price': item.price,
                     'status': item.status,
                     'shopping_list_id': item.shopping_list_id
                 }
                 return make_response(jsonify(response)), 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
     def delete(self, id, item_id):
+        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -496,16 +540,24 @@ class ShoppingListIdItemsIdAPI(MethodView):
                     "message": "Shopping list Item {} deleted".format(item.id)
                 }, 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 class ShoppingListSearchAPI(MethodView):
+    """This class handles the shopping list search functionality"""
+
     def get(self, q, limit):
+        """Handle GET request for this view. Url ---> /shoppinglists/search/shoppinglist/<q>/<limit>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -531,17 +583,25 @@ class ShoppingListSearchAPI(MethodView):
                     the_lists.append(the_list)
                 return make_response(jsonify(the_lists)), 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 
 class ItemSearchAPI(MethodView):
+    """This class handles the shopping list item search functionality"""
+
     def get(self, q, limit):
+        """Handle GET request for this view. Url ---> /shoppinglists/search/item/<q>/<limit>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -553,9 +613,9 @@ class ItemSearchAPI(MethodView):
             if not isinstance(user_id, str):
                 items = Item.query
                 if q:
-                    items = items.filter(ShoppingList.title.like('%' + q + '%'))
+                    items = items.filter(Item.name.like('%' + q + '%'))
 
-                items = items.order_by(ShoppingList.title).limit(limit).all()
+                items = items.order_by(Item.name).limit(limit).all()
                 the_items = []
                 for an_item in items:
                     the_item = {
@@ -568,13 +628,17 @@ class ItemSearchAPI(MethodView):
                     the_items.append(the_item)
                 return make_response(jsonify(the_items)), 200
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Provide a valid authentication token.'
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 
 register_api = RegisterAPI.as_view('register_api')

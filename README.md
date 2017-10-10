@@ -7,45 +7,8 @@
 ## Progress Tracking
 https://www.pivotaltracker.com/n/projects/2092508
 
-## Technologies
-1. alembic==0.9.5
-2. astroid==1.5.3
-3. bcrypt==3.1.3
-4. cffi==1.10.0
-5. click==6.7
-6. colorama==0.3.9
-7. coverage==4.4.1
-8. cryptography==1.7.2
-9. Flask==0.12.2
-10. Flask-API==0.7.1
-11. Flask-Bcrypt==0.7.1
-12. Flask-Migrate==2.1.0
-13. Flask-Script==2.0.5
-14. Flask-SQLAlchemy==2.2
-15. Flask-Testing==0.6.2
-16. gunicorn==19.7.1
-17. idna==2.6
-18. isort==4.2.15
-19. itsdangerous==0.24
-20. Jinja2==2.9.6
-21. jwt==0.5.2
-22. lazy-object-proxy==1.3.1
-23. Mako==1.0.7
-24. MarkupSafe==1.0
-25. mccabe==0.6.1
-26. nose==1.3.7
-27. psycopg2==2.7.3
-28. pyasn1==0.3.2
-29. pycparser==2.18
-30. PyJWT==1.5.2
-31. pylint==1.7.2
-32. python-dateutil==2.6.1
-33. python-editor==1.0.3
-34. six==1.10.0
-35. SQLAlchemy==1.1.13
-36. Werkzeug==0.12.2
-37. wrapt==1.10.11
-38. Python==3.6.1
+## Live API
+https://the-real-shopping-list-api.herokuapp.com/
 
 ## Getting Started
 To be able to use the application locally, one should follow the guidelines highlighted below.
@@ -60,11 +23,19 @@ git clone https://github.com/Sekams/shopping_list_api.git
 ```
 pip install -r requirements.txt
 ```
-4. After all the requirements are installed on the local virtual environment, run the application by running the following code in the virtual environment:
+
+4. Install Postgres SQL and create a database called _"shopping\_list\_api"_
+
+5. Create the database tables by running the following command within the virtual environment:
+```
+python manage.py create_db
+```
+
+6. After all the requirements are installed on the local virtual environment, run the application by running the following code in the virtual environment:
 ```
 python run.py
 ```
-5. After successfully running the application, one can explore the features of the Shopping List Application API exploring the : http://127.0.0.1:5000 in any web browser of choice
+7. After successfully running the application, one can explore the features of the Shopping List Application API exploring the : http://127.0.0.1:5000 in any web browser of choice
 
 ## Features
 * Account creation
@@ -79,7 +50,7 @@ python run.py
 | POST | /auth/register | TRUE | Registers a user and takes **username**, **email** and **password** as arguments |
 | POST | /auth/login | TRUE | Logs regitered users in and takes **username** and **password** as arguments |
 | POST | /auth/logout | TRUE | Logs logged in users out |
-| POST | /auth/reset-password | TRUE | Changes the password of a logged in user and takes **old_password** and **new_password** as arguments |
+| POST | /auth/reset-password | TRUE | Changes the password of a logged in user and takes **old\_password** and **new\_password** as arguments |
 | POST | /shoppinglists/ | FALSE | Saves a given shopping list to the database |
 | GET | /shoppinglists/ | FALSE | Gets all shopping lists in the database |
 | GET | /shoppinglists/\<id\> | FALSE | Gets a shopping list with the provided id from the database |

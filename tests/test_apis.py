@@ -207,6 +207,42 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('Shopping list Item 1 deleted', str(res.data))
 
+    def test_shopping_list_search(self):
+        """Test API can search for a shopping list (GET request)"""
+        rv = self.client().post('/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/shoppinglists/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        search_res =  self.client().get('/shoppinglists/search/shoppinglist/From/1', headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(search_res.status_code, 200)
+        self.assertIn('From Supermarket', str(search_res.data))
+
+    def test_shopping_list_item_search(self):
+        """Test API can search for a shopping list item (GET request)"""
+        rv = self.client().post('/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/shoppinglists/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        rv_4 = self.client().post('/shoppinglists/1/items/',
+                                  headers=dict(Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        search_res =  self.client().get('/shoppinglists/search/item/Sugar/1', headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(search_res.status_code, 200)
+        self.assertIn('Sugar', str(search_res.data))
+
     def tearDown(self):
         """Teardown all initialized variables."""
         with self.app.app_context():
