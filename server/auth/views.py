@@ -47,7 +47,7 @@ class RegisterAPI(MethodView):
 
 
 class LoginAPI(MethodView):
-    """This class-based view handles user login and access token generation."""
+    """This class handles user login and access token generation."""
 
     def post(self):
         """Handle POST request for this view. Url ---> /auth/login"""
@@ -83,9 +83,7 @@ class LoginAPI(MethodView):
 
 
 class LogoutAPI(MethodView):
-    """
-    Logout Resource
-    """
+    """This class handles user logout"""
 
     def post(self):
         # get auth token
@@ -129,7 +127,7 @@ class LogoutAPI(MethodView):
 
 
 class ResetPasswordAPI(MethodView):
-    """This class registers a new user."""
+    """This class resets a user password."""
 
     def post(self):
         """Handle POST request for this view. Url ---> /auth/reset-password"""
@@ -174,7 +172,7 @@ class ResetPasswordAPI(MethodView):
 
 
 class ShoppingListAPI(MethodView):
-    """This class registers a new user."""
+    """This class handles multiple shopping lists"""
 
     def post(self):
         """Handle POST request for this view. Url ---> /shoppinglists/"""
@@ -268,7 +266,11 @@ class ShoppingListAPI(MethodView):
 
 
 class ShoppingListIdAPI(MethodView):
+    """This class handles a single shopping list"""
+
     def get(self, id):
+        """Handle GET request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -309,6 +311,8 @@ class ShoppingListIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def put(self, id):
+        """Handle PUT request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -353,6 +357,8 @@ class ShoppingListIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def delete(self, id):
+        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -392,7 +398,7 @@ class ShoppingListIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
 class ShoppingListIdItemsAPI(MethodView):
-    """This class registers a new user."""
+    """This class handles multiple shopping list items."""
 
     def post(self, id):
         """Handle POST request for this view. Url ---> /shoppinglists/<id>/items/"""
@@ -461,7 +467,11 @@ class ShoppingListIdItemsAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
 class ShoppingListIdItemsIdAPI(MethodView):
+    """This class handles a single shopping list item"""
+
     def put(self, id, item_id):
+        """Handle PUT request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -509,6 +519,8 @@ class ShoppingListIdItemsIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def delete(self, id, item_id):
+        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -541,7 +553,11 @@ class ShoppingListIdItemsIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
 class ShoppingListSearchAPI(MethodView):
+    """This class handles the shopping list search functionality"""
+
     def get(self, q, limit):
+        """Handle GET request for this view. Url ---> /shoppinglists/search/shoppinglist/<q>/<limit>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
@@ -581,7 +597,11 @@ class ShoppingListSearchAPI(MethodView):
 
 
 class ItemSearchAPI(MethodView):
+    """This class handles the shopping list item search functionality"""
+
     def get(self, q, limit):
+        """Handle GET request for this view. Url ---> /shoppinglists/search/item/<q>/<limit>"""
+
         # get the access token from the authorization header
         auth_header = request.headers.get('Authorization')
         access_token = auth_header.split(" ")[1]
