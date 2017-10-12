@@ -1,6 +1,5 @@
 from flask_api import FlaskAPI
-from flask import request, jsonify, abort
-from flask_bcrypt import Bcrypt
+from flask import jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from server.config import app_config
 
@@ -11,9 +10,13 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     db.init_app(app)
 
-    # @app.route("/")
-    # def main():
-    #     return redirect("http://docs.shoppinglistapidoc.apiary.io/")
+    @app.errorhandler(405)
+    def not_found(error):
+        response = {
+            'status': 'fail',
+            'message': 'Please check the url you entered and try again'
+        }
+        return make_response(jsonify(response), 405)
 
     from .auth import auth_blueprint, shoppinglists_blueprint
     from .apiary.views import apiary

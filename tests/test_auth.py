@@ -44,8 +44,8 @@ class AuthTestCase(unittest.TestCase):
         res = self.client().post('/auth/register', data=self.user_data)
         result = json.loads(res.data.decode())
         self.assertEqual(result['message'],
-                         "Something went wrong. Please try again.")
-        self.assertEqual(res.status_code, 401)
+                         "Please provide the required parameter value for email")
+        self.assertEqual(res.status_code, 400)
 
     def test_already_registered_user(self):
         """Test that a user cannot be registered twice."""
@@ -77,7 +77,7 @@ class AuthTestCase(unittest.TestCase):
         # define a dictionary to represent an unregistered user
         not_a_user = {
             'username': 'not_a_user',
-            'password': 'nope'
+            'password': 'nopesir'
         }
         # send a POST request to /auth/login with the data above
         res = self.client().post('/auth/login', data=not_a_user)
@@ -94,7 +94,7 @@ class AuthTestCase(unittest.TestCase):
         """Test invalid password user can login."""
         res = self.client().post('/auth/register', data=self.new_user_data)
         self.assertEqual(res.status_code, 201)
-        self.user_data['password'] = '1234'
+        self.user_data['password'] = '123456'
         login_res = self.client().post('/auth/login', data=self.user_data)
         result = json.loads(login_res.data.decode())
         self.assertEqual(result['message'], "Invalid username or password, Please try again")

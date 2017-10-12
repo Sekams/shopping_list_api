@@ -1,11 +1,9 @@
 """This module defines the models of the application"""
 from datetime import datetime, timedelta
-from server import create_app, db
+from server.config import secret_key
 from flask_bcrypt import Bcrypt
-from instance import instance
+from server import db
 import jwt
-
-app = create_app(instance)
 
 class User(db.Model):
     """Model for the user table"""
@@ -43,7 +41,7 @@ class User(db.Model):
             }
             return jwt.encode(
                 payload,
-                app.config.get('SECRET_KEY'),
+                secret_key,
                 algorithm='HS256'
             )
         except Exception as e:
@@ -57,7 +55,7 @@ class User(db.Model):
         :return: integer|string
         """
         try:
-            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'), algorithms=['HS256'])
+            payload = jwt.decode(auth_token, secret_key, algorithms=['HS256'])
             is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
             if is_blacklisted_token:
                 return 'Token blacklisted. Please log in again.'

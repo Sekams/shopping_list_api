@@ -1,6 +1,5 @@
 import unittest
 import json
-import os
 from server import create_app, db
 
 class ShoppingListAPITestCase(unittest.TestCase):
@@ -15,9 +14,9 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.shopping_list_1 = {'title': 'From Supermarket'}
         self.shopping_list_2 = {'title': 'From Farmers market'}
         self.shopping_lists = [self.shopping_list_1, self.shopping_list_2]
-        self.new_user = {'username': 'homie', 'email': 'homie@duff.com', 'password': 'duff'}
-        self.user = {'username': 'homie', 'password': 'duff'}
-        self.user_pw_rst = {'old_password': 'duff', 'new_password': 'beer'}
+        self.new_user = {'username': 'homie', 'email': 'homie@duffbeer.com', 'password': 'duffbeer'}
+        self.user = {'username': 'homie', 'password': 'duffbeer'}
+        self.user_pw_rst = {'old_password': 'duffbeer', 'new_password': 'beerduff'}
 
         with self.app.app_context():
             db.create_all()
