@@ -14,6 +14,8 @@ class User(db.Model):
     username = db.Column(db.String(255), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    created_on = db.Column(db.DateTime, nullable=False)
+    modified_on = db.Column(db.DateTime, nullable=False)
     shopping_lists = db.relationship(
         'ShoppingList', order_by='ShoppingList.id', cascade="all, delete-orphan")
 
@@ -21,6 +23,8 @@ class User(db.Model):
         self.username = username
         self.email = email
         self.password = Bcrypt().generate_password_hash(password).decode()
+        self.created_on = datetime.now()
+        self.modified_on = datetime.now()
 
     def validate_password(self, password):
         """
@@ -35,7 +39,7 @@ class User(db.Model):
         """
         try:
             payload = {
-                'exp': datetime.utcnow() + timedelta(minutes=5),
+                'exp': datetime.utcnow() + timedelta(hours=24),
                 'iat': datetime.utcnow(),
                 'sub': user_id
             }
@@ -77,6 +81,8 @@ class ShoppingList(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(255), unique=True, nullable=False)
+    created_on = db.Column(db.DateTime, nullable=False)
+    modified_on = db.Column(db.DateTime, nullable=False)
     items = db.relationship('Item', order_by='Item.id',
                             cascade="all, delete-orphan")
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
@@ -84,6 +90,8 @@ class ShoppingList(db.Model):
     def __init__(self, title, user_id):
         self.title = title
         self.user_id = user_id
+        self.created_on = datetime.now()
+        self.modified_on = datetime.now()
 
     def save(self):
         db.session.add(self)
@@ -109,12 +117,16 @@ class Item(db.Model):
     name = db.Column(db.String(50), unique=True, nullable=False)
     price = db.Column(db.Integer)
     status = db.Column(db.Boolean)
+    created_on = db.Column(db.DateTime, nullable=False)
+    modified_on = db.Column(db.DateTime, nullable=False)
     shopping_list_id = db.Column(db.Integer, db.ForeignKey(ShoppingList.id))
 
     def __init__(self, name, price, status, shopping_list_id):
         self.name = name
         self.price = price
         self.status = status
+        self.created_on = datetime.now()
+        self.modified_on = datetime.now()
         self.shopping_list_id = shopping_list_id
 
     def save(self):

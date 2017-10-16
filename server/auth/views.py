@@ -1,5 +1,5 @@
 from . import auth_blueprint, shoppinglists_blueprint
-
+from datetime import datetime
 from flask.views import MethodView
 from flask import make_response, request, jsonify
 from server.models import db, User, ShoppingList, Item, BlacklistToken, Bcrypt
@@ -10,7 +10,7 @@ class RegisterAPI(MethodView):
     """This class registers a new user."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/register"""
+        """Handle POST request for this view. Url ---> /v1/auth/register"""
 
         if validate_required(request.data, 'username', 'password', 'email')['status'] == 'success':
             # Query to see if the user already exists
@@ -48,7 +48,7 @@ class RegisterAPI(MethodView):
                     'message': 'User already exists. Please login.'
                 }
 
-                return make_response(jsonify(response)), 202
+                return make_response(jsonify(response)), 409
         else:
             return validate_required(request.data, 'username', 'password', 'email'), 400
 
@@ -57,7 +57,7 @@ class LoginAPI(MethodView):
     """This class handles user login and access token generation."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/login"""
+        """Handle POST request for this view. Url ---> /v1/auth/login"""
 
         if validate_required(request.data, 'username', 'password')['status'] == 'success':
             try:
@@ -140,7 +140,7 @@ class ResetPasswordAPI(MethodView):
     """This class resets a user password."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/reset-password"""
+        """Handle POST request for this view. Url ---> /v1/auth/reset-password"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -152,6 +152,7 @@ class ResetPasswordAPI(MethodView):
                         if user and user.validate_password(request.data['old_password']):
                             user.password = Bcrypt().generate_password_hash(
                                 request.data['new_password']).decode()
+                            user.modified_on = datetime.now()
                             user.save()
 
                             response = {
@@ -192,7 +193,7 @@ class ShoppingListAPI(MethodView):
     """This class handles multiple shopping lists"""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /shoppinglists/"""
+        """Handle POST request for this view. Url ---> /v1/shoppinglists/"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -208,7 +209,7 @@ class ShoppingListAPI(MethodView):
                                     'status': 'fail',
                                     'message': 'Shopping List already exists'
                                 }
-                                return make_response(jsonify(response))
+                                return make_response(jsonify(response)), 409
                             title = str(request.data['title'])
                             if title:
                                 shopping_list = ShoppingList(
@@ -217,7 +218,9 @@ class ShoppingListAPI(MethodView):
                                 response = jsonify({
                                     'id': shopping_list.id,
                                     'title': shopping_list.title,
-                                    'user_id': user_id
+                                    'user_id': user_id,
+                                    'created_on': shopping_list.created_on,
+                                    'modified_on': shopping_list.modified_on
                                 })
 
                                 return make_response(response), 201
@@ -251,7 +254,7 @@ class ShoppingListAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def get(self):
-        """Handle GET request for this view. Url ---> /shoppinglists/"""
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -268,7 +271,9 @@ class ShoppingListAPI(MethodView):
                             obj = {
                                 'id': shopping_list.id,
                                 'title': shopping_list.title,
-                                'user_id': shopping_list.user_id
+                                'user_id': shopping_list.user_id,
+                                'created_on': shopping_list.created_on,
+                                'modified_on': shopping_list.modified_on
                             }
                             results.append(obj)
 
@@ -304,7 +309,7 @@ class ShoppingListIdAPI(MethodView):
     """This class handles a single shopping list"""
 
     def get(self, id):
-        """Handle GET request for this view. Url ---> /shoppinglists/<id>"""
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -326,7 +331,9 @@ class ShoppingListIdAPI(MethodView):
                     response = {
                         'id': shoppinglist.id,
                         'title': shoppinglist.title,
-                        'user_id': shoppinglist.user_id
+                        'user_id': shoppinglist.user_id,
+                        'created_on': shoppinglist.created_on,
+                        'modified_on': shoppinglist.modified_on
                     }
                     return make_response(jsonify(response)), 200
                 else:
@@ -350,7 +357,7 @@ class ShoppingListIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def put(self, id):
-        """Handle PUT request for this view. Url ---> /shoppinglists/<id>"""
+        """Handle PUT request for this view. Url ---> /v1/shoppinglists/<id>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -373,11 +380,14 @@ class ShoppingListIdAPI(MethodView):
                         new_title = str(request.data['new_title'])
 
                         shoppinglist.title = new_title
+                        shoppinglist.modified_on = datetime.now()
                         shoppinglist.save()
                         response = {
                             'id': shoppinglist.id,
                             'title': shoppinglist.title,
-                            'user_id': shoppinglist.user_id
+                            'user_id': shoppinglist.user_id,
+                            'created_on': shoppinglist.created_on,
+                            'modified_on': shoppinglist.modified_on
                         }
                         return make_response(jsonify(response)), 200
                     else:
@@ -403,7 +413,7 @@ class ShoppingListIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def delete(self, id):
-        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>"""
+        """Handle DELETE request for this view. Url ---> /v1/shoppinglists/<id>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -452,7 +462,7 @@ class ShoppingListIdItemsAPI(MethodView):
     """This class handles multiple shopping list items."""
 
     def post(self, id):
-        """Handle POST request for this view. Url ---> /shoppinglists/<id>/items/"""
+        """Handle POST request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -480,7 +490,7 @@ class ShoppingListIdItemsAPI(MethodView):
                                         'status': 'fail',
                                         'message': 'Shopping List Item exists'
                                     }
-                                    return make_response(jsonify(response))
+                                    return make_response(jsonify(response)), 409
                                 if price:
                                     price = int(price)
                                 status_bool = False
@@ -495,6 +505,8 @@ class ShoppingListIdItemsAPI(MethodView):
                                     'name': item.name,
                                     'price': item.price,
                                     'status': item.status,
+                                    'created_on': item.created_on,
+                                    'modified_on': item.modified_on,
                                     'shopping_list_id': item.shopping_list_id
                                 })
                                 return make_response(response), 201
@@ -533,12 +545,129 @@ class ShoppingListIdItemsAPI(MethodView):
             }
             return make_response(jsonify(responseObject)), 403
 
+    def get(self, id):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    user = User.query.filter_by(id=user_id).first()
+                    if user:
+                        shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                        if not shoppinglist:
+                            response = {
+                                'status': 'fail',
+                                'message': 'Shopping List not found'
+                            }
+                            return make_response(jsonify(response))
+
+                        shoppinglistitems = Item.query.filter_by(shopping_list_id=id).all()
+                        if shoppinglistitems:
+                            items = []
+                            for item in shoppinglistitems:
+                                item_JSON = {
+                                    'id': item.id,
+                                    'name': item.name,
+                                    'price': item.price,
+                                    'status': item.status,
+                                    'created_on': item.created_on,
+                                    'modified_on': item.modified_on,
+                                    'shopping_list_id': item.shopping_list_id
+                                }
+                                items.append(item_JSON)
+                            return make_response(jsonify(items)), 200
+                        else:
+                            response = {
+                                'status': 'success',
+                                'message': 'No Shopping List Items found'
+                            }
+                            return make_response(jsonify(response)), 204
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'User not found'
+                        }
+                        return make_response(jsonify(response)), 401
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
+                }
+                return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
 
 class ShoppingListIdItemsIdAPI(MethodView):
     """This class handles a single shopping list item"""
 
+    def get(self, id, item_id):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                    if not shoppinglist:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List not found'
+                        }
+                        return make_response(jsonify(response))
+                    item = Item.query.filter_by(id=item_id).first()
+                    response = {
+                        'id': item.id,
+                        'name': item.name,
+                        'price': item.price,
+                        'status': item.status,
+                        'created_on': item.created_on,
+                        'modified_on': item.modified_on,
+                        'shopping_list_id': item.shopping_list_id
+                    }
+                    if not item:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List Item not found'
+                        }
+                        return make_response(jsonify(response)), 204
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
+                }
+                return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
     def put(self, id, item_id):
-        """Handle PUT request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+        """Handle PUT request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -566,12 +695,15 @@ class ShoppingListIdItemsIdAPI(MethodView):
                         item.name = new_name
                         item.price = new_price
                         item.status = status_bool
+                        item.modified_on = datetime.now()
                         item.save()
                         response = {
                             'id': item.id,
                             'name': item.name,
                             'price': item.price,
                             'status': item.status,
+                            'created_on': item.created_on,
+                            'modified_on': item.modified_on,
                             'shopping_list_id': item.shopping_list_id
                         }
                         return make_response(jsonify(response)), 200
@@ -599,7 +731,7 @@ class ShoppingListIdItemsIdAPI(MethodView):
             return make_response(jsonify(responseObject)), 403
 
     def delete(self, id, item_id):
-        """Handle DELETE request for this view. Url ---> /shoppinglists/<id>/items/<item_id>"""
+        """Handle DELETE request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -649,7 +781,7 @@ class ShoppingListSearchAPI(MethodView):
     """This class handles the shopping list search functionality"""
 
     def get(self, q, limit):
-        """Handle GET request for this view. Url ---> /shoppinglists/search/shoppinglist/<q>/<limit>"""
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/shoppinglist/<q>/<limit>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -668,7 +800,9 @@ class ShoppingListSearchAPI(MethodView):
                         the_list = {
                             'id': a_list.id,
                             'title': a_list.title,
-                            'user_id': a_list.user_id
+                            'user_id': a_list.user_id,
+                            'created_on': a_list.created_on,
+                            'modified_on': a_list.modified_on
                         }
                         the_lists.append(the_list)
                     return make_response(jsonify(the_lists)), 200
@@ -697,7 +831,7 @@ class ItemSearchAPI(MethodView):
     """This class handles the shopping list item search functionality"""
 
     def get(self, q, limit):
-        """Handle GET request for this view. Url ---> /shoppinglists/search/item/<q>/<limit>"""
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/item/<q>/<limit>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -717,6 +851,8 @@ class ItemSearchAPI(MethodView):
                             'name': an_item.name,
                             'price': an_item.price,
                             'status': an_item.status,
+                            'created_on': an_item.created_on,
+                            'modified_on': an_item.modified_on,
                             'shopping_list_id': an_item.shopping_list_id
                         }
                         the_items.append(the_item)
@@ -755,52 +891,52 @@ items_search_api = ItemSearchAPI.as_view('items_search_api')
 
 
 auth_blueprint.add_url_rule(
-    '/auth/register',
+    '/v1/auth/register',
     view_func=register_api,
     methods=['POST'])
 
 auth_blueprint.add_url_rule(
-    '/auth/login',
+    '/v1/auth/login',
     view_func=login_api,
     methods=['POST']
 )
 auth_blueprint.add_url_rule(
-    '/auth/logout',
+    '/v1/auth/logout',
     view_func=logout_api,
     methods=['POST']
 )
 auth_blueprint.add_url_rule(
-    '/auth/reset-password',
+    '/v1/auth/reset-password',
     view_func=reset_password_api,
     methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/',
+    '/v1/shoppinglists/',
     view_func=shopping_lists_api,
     methods=['POST', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>',
+    '/v1/shoppinglists/<int:id>',
     view_func=shopping_lists_id_api,
     methods=['DELETE', 'GET', 'PUT']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>/items/',
+    '/v1/shoppinglists/<int:id>/items/',
     view_func=shopping_lists_id_items_api,
-    methods=['POST']
+    methods=['POST', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>/items/<int:item_id>',
+    '/v1/shoppinglists/<int:id>/items/<int:item_id>',
     view_func=shopping_lists_id_items_id_api,
-    methods=['PUT', 'DELETE']
+    methods=['PUT', 'DELETE', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/search/shoppinglist/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/shoppinglist/<string:q>/<int:limit>',
     view_func=shopping_lists_search_api,
     methods=['GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/search/item/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/item/<string:q>/<int:limit>',
     view_func=items_search_api,
     methods=['GET']
 )
