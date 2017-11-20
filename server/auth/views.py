@@ -830,8 +830,8 @@ class ShoppingListIdItemsIdAPI(MethodView):
 class ShoppingListSearchAPI(MethodView):
     """This class handles the shopping list search functionality"""
 
-    def get(self, q, limit):
-        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/shoppinglist/<q>/<limit>"""
+    def get(self, q, limit, page):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/shoppinglist/<q>/<limit>/<page>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -848,7 +848,7 @@ class ShoppingListSearchAPI(MethodView):
                         )
 
                     shoppinglists = shoppinglists.order_by(
-                        ShoppingList.title).paginate(1, limit, error_out=False).items
+                        ShoppingList.title).paginate(page, limit, error_out=False).items
 
                     if not shoppinglists:
                         response = {
@@ -897,8 +897,8 @@ class ShoppingListSearchAPI(MethodView):
 class ItemSearchAPI(MethodView):
     """This class handles the shopping list item search functionality"""
 
-    def get(self, q, limit):
-        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/item/<q>/<limit>"""
+    def get(self, q, limit, page):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/item/<q>/<limit>/<page>"""
 
         auth_token = validate_token(request)
         if auth_token:
@@ -910,7 +910,7 @@ class ItemSearchAPI(MethodView):
                     if q:
                         items = Item.query.filter_by(user_id=user_id)
                         items = items.filter(Item.name.ilike(q + '%'))
-                        items = items.order_by(Item.name).paginate(1, limit, error_out=False).items
+                        items = items.order_by(Item.name).paginate(page, limit, error_out=False).items
 
                     if not items:
                         response = {
@@ -1014,12 +1014,12 @@ shoppinglists_blueprint.add_url_rule(
     methods=['PUT', 'DELETE', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/v1/shoppinglists/search/shoppinglist/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/shoppinglist/<string:q>/<int:limit>/<int:page>',
     view_func=shopping_lists_search_api,
     methods=['GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/v1/shoppinglists/search/item/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/item/<string:q>/<int:limit>/<int:page>',
     view_func=items_search_api,
     methods=['GET']
 )
