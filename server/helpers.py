@@ -24,7 +24,7 @@ def validate_required(request_data, *args):
                             'message': 'Email address is invalid'
                         }
                         return response
-                if arg.lower() == 'password' and request_data[arg]:
+                if 'password' in arg.lower() and request_data[arg]:
                     if len(request_data[arg]) < 6:
                         response = {
                             'status': 'fail',

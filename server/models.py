@@ -80,7 +80,7 @@ class ShoppingList(db.Model):
     __tablename__ = 'shoppingLists'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    title = db.Column(db.String(255), unique=True, nullable=False)
+    title = db.Column(db.String(255), nullable=False)
     created_on = db.Column(db.DateTime, nullable=False)
     modified_on = db.Column(db.DateTime, nullable=False)
     items = db.relationship('Item', order_by='Item.id',
@@ -114,20 +114,22 @@ class Item(db.Model):
     __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(50), nullable=False)
     price = db.Column(db.Integer)
     status = db.Column(db.Boolean)
     created_on = db.Column(db.DateTime, nullable=False)
     modified_on = db.Column(db.DateTime, nullable=False)
     shopping_list_id = db.Column(db.Integer, db.ForeignKey(ShoppingList.id))
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
 
-    def __init__(self, name, price, status, shopping_list_id):
+    def __init__(self, name, price, status, shopping_list_id, user_id):
         self.name = name
         self.price = price
         self.status = status
         self.created_on = datetime.now()
         self.modified_on = datetime.now()
         self.shopping_list_id = shopping_list_id
+        self.user_id = user_id
 
     def save(self):
         db.session.add(self)

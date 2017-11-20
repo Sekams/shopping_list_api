@@ -14,7 +14,8 @@ class RegisterAPI(MethodView):
 
         if validate_required(request.data, 'username', 'password', 'email')['status'] == 'success':
             # Query to see if the user already exists
-            user = User.query.filter_by(username=request.data['username'].lower()).first()
+            user = User.query.filter_by(
+                username=request.data['username'].lower()).first()
 
             if not user:
                 # There is no user so we'll try to register them
@@ -24,7 +25,8 @@ class RegisterAPI(MethodView):
                     username = post_data['username'].lower()
                     email = post_data['email']
                     password = post_data['password']
-                    user = User(username=username, email=email, password=password)
+                    user = User(username=username,
+                                email=email, password=password)
                     user.save()
 
                     response = {
@@ -39,7 +41,7 @@ class RegisterAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 # There is an existing user. We don't want to register users twice
                 # Return a message to the user telling them that they they already exist
@@ -121,7 +123,7 @@ class LogoutAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 responseObject = {
                     'status': 'fail',
@@ -178,7 +180,7 @@ class ResetPasswordAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 return validate_required(request.data, 'old_password', 'new_password'), 400
         else:
@@ -203,7 +205,8 @@ class ShoppingListAPI(MethodView):
                     if not isinstance(user_id, str):
                         user = User.query.filter_by(id=user_id).first()
                         if user:
-                            shoppinglist = ShoppingList.query.filter_by(title=request.data['title']).first()
+                            shoppinglist = ShoppingList.query.filter_by(
+                                title=request.data['title'], user_id=user_id).first()
                             if shoppinglist:
                                 response = {
                                     'status': 'fail',
@@ -215,22 +218,26 @@ class ShoppingListAPI(MethodView):
                                 shopping_list = ShoppingList(
                                     title=title, user_id=user_id)
                                 shopping_list.save()
-                                response = jsonify({
-                                    'id': shopping_list.id,
-                                    'title': shopping_list.title,
-                                    'user_id': user_id,
-                                    'created_on': shopping_list.created_on,
-                                    'modified_on': shopping_list.modified_on
-                                })
 
-                                return make_response(response), 201
+                                response = {
+                                    'status': 'success',
+                                    'message': 'Shopping list created',
+                                    'shoppingList': {
+                                        'id': shopping_list.id,
+                                        'title': shopping_list.title,
+                                        'user_id': user_id,
+                                        'created_on': shopping_list.created_on,
+                                        'modified_on': shopping_list.modified_on
+                                    }
+                                }
+                                return make_response(jsonify(response)), 201
 
                         else:
                             response = {
                                 'status': 'fail',
                                 'message': 'User not found'
                             }
-                            return make_response(jsonify(response)), 401
+                            return make_response(jsonify(response)), 404
                     else:
                         responseObject = {
                             'status': 'fail',
@@ -243,7 +250,7 @@ class ShoppingListAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 return validate_required(request.data, 'title'), 400
         else:
@@ -265,25 +272,36 @@ class ShoppingListAPI(MethodView):
                     if user:
                         shopping_lists = ShoppingList.query.filter_by(
                             user_id=user_id)
-                        results = []
 
-                        for shopping_list in shopping_lists:
-                            obj = {
-                                'id': shopping_list.id,
-                                'title': shopping_list.title,
-                                'user_id': shopping_list.user_id,
-                                'created_on': shopping_list.created_on,
-                                'modified_on': shopping_list.modified_on
+                        if not shopping_lists:
+                            response = {
+                                'status': 'fail',
+                                'message': 'No shopping lists found'
                             }
-                            results.append(obj)
-
-                        return make_response(jsonify(results)), 200
+                            return make_response(jsonify(response)), 404
+                        results = []
+                        for shopping_list in shopping_lists:
+                            results.append(
+                                {
+                                    'id': shopping_list.id,
+                                    'title': shopping_list.title,
+                                    'user_id': shopping_list.user_id,
+                                    'created_on': shopping_list.created_on,
+                                    'modified_on': shopping_list.modified_on
+                                }
+                            )
+                        response = {
+                            'status': 'success',
+                            'message': 'Shopping lists found',
+                            'shoppingLists': results
+                        }
+                        return make_response(jsonify(response)), 200
                     else:
                         response = {
                             'status': 'fail',
                             'message': 'User not found'
                         }
-                        return make_response(jsonify(response)), 401
+                        return make_response(jsonify(response)), 404
                 else:
                     responseObject = {
                         'status': 'fail',
@@ -329,11 +347,15 @@ class ShoppingListIdAPI(MethodView):
                         }
                         return make_response(jsonify(responseObject)), 404
                     response = {
-                        'id': shoppinglist.id,
-                        'title': shoppinglist.title,
-                        'user_id': shoppinglist.user_id,
-                        'created_on': shoppinglist.created_on,
-                        'modified_on': shoppinglist.modified_on
+                        'status': 'success',
+                        'message': 'Shopping List found.',
+                        'shoppingList': {
+                            'id': shoppinglist.id,
+                            'title': shoppinglist.title,
+                            'user_id': shoppinglist.user_id,
+                            'created_on': shoppinglist.created_on,
+                            'modified_on': shoppinglist.modified_on
+                        }
                     }
                     return make_response(jsonify(response)), 200
                 else:
@@ -348,7 +370,7 @@ class ShoppingListIdAPI(MethodView):
                     'status': 'fail',
                     'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
@@ -368,7 +390,8 @@ class ShoppingListIdAPI(MethodView):
                     if not isinstance(user_id, str):
                         # If the id is not a string(error), we have a user id
                         # Get the bucketlist with the id specified from the URL (<int:id>)
-                        shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
                         if not shoppinglist:
                             # There is no bucketlist with this ID for this User, so
                             # Raise an HTTPException with a 404 not found status code
@@ -383,11 +406,15 @@ class ShoppingListIdAPI(MethodView):
                         shoppinglist.modified_on = datetime.now()
                         shoppinglist.save()
                         response = {
-                            'id': shoppinglist.id,
-                            'title': shoppinglist.title,
-                            'user_id': shoppinglist.user_id,
-                            'created_on': shoppinglist.created_on,
-                            'modified_on': shoppinglist.modified_on
+                            'status': 'success',
+                            'message': 'Shopping List edited.',
+                            'shoppingList': {
+                                'id': shoppinglist.id,
+                                'title': shoppinglist.title,
+                                'user_id': shoppinglist.user_id,
+                                'created_on': shoppinglist.created_on,
+                                'modified_on': shoppinglist.modified_on
+                            }
                         }
                         return make_response(jsonify(response)), 200
                     else:
@@ -402,7 +429,7 @@ class ShoppingListIdAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 return validate_required(request.data, 'new_title'), 400
         else:
@@ -433,10 +460,11 @@ class ShoppingListIdAPI(MethodView):
                         }
                         return make_response(jsonify(responseObject)), 404
                     shoppinglist.delete()
-                    return {
+                    response = {
                         "status": "success",
-                        "message": "Shopping list {} deleted".format(shoppinglist.id)
-                    }, 200
+                        "message": "Shopping list '{}' deleted".format(shoppinglist.title)
+                    }
+                    return make_response(jsonify(response)), 200
                 else:
                     response = {
                         'status': 'fail',
@@ -449,7 +477,7 @@ class ShoppingListIdAPI(MethodView):
                     'status': 'fail',
                     'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
@@ -472,19 +500,21 @@ class ShoppingListIdItemsAPI(MethodView):
                     if not isinstance(user_id, str):
                         user = User.query.filter_by(id=user_id).first()
                         if user:
-                            shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                            shoppinglist = ShoppingList.query.filter_by(
+                                id=id).first()
                             if not shoppinglist:
                                 response = {
                                     'status': 'fail',
                                     'message': 'Shopping List not found'
                                 }
-                                return make_response(jsonify(response))
+                                return make_response(jsonify(response)), 404
 
                             name = str(request.data['name'])
                             price = str(request.data['price'])
                             status = str(request.data['status'])
                             if name:
-                                shoppinglistitem = Item.query.filter_by(name=name).first()
+                                shoppinglistitem = Item.query.filter_by(
+                                    name=name, shopping_list_id=id).first()
                                 if shoppinglistitem:
                                     response = {
                                         'status': 'fail',
@@ -498,18 +528,23 @@ class ShoppingListIdItemsAPI(MethodView):
                                     if status.lower == 'true':
                                         status_bool = True
 
-                                item = Item(name=name, price=price, status=status_bool, shopping_list_id=id)
+                                item = Item(
+                                    name=name, price=price, status=status_bool, shopping_list_id=id, user_id=user_id)
                                 item.save()
-                                response = jsonify({
-                                    'id': item.id,
-                                    'name': item.name,
-                                    'price': item.price,
-                                    'status': item.status,
-                                    'created_on': item.created_on,
-                                    'modified_on': item.modified_on,
-                                    'shopping_list_id': item.shopping_list_id
-                                })
-                                return make_response(response), 201
+                                response = {
+                                    'status': 'success',
+                                    'message': 'Shopping List Item created.',
+                                    'shoppingListItem': {
+                                        'id': item.id,
+                                        'name': item.name,
+                                        'price': item.price,
+                                        'status': item.status,
+                                        'created_on': item.created_on,
+                                        'modified_on': item.modified_on,
+                                        'shopping_list_id': item.shopping_list_id
+                                    }
+                                }
+                                return make_response(jsonify(response)), 201
 
                             else:
                                 response = {
@@ -522,7 +557,7 @@ class ShoppingListIdItemsAPI(MethodView):
                                 'status': 'fail',
                                 'message': 'User not found'
                             }
-                            return make_response(jsonify(response)), 401
+                            return make_response(jsonify(response)), 404
                     else:
                         response = {
                             'status': 'fail',
@@ -535,7 +570,7 @@ class ShoppingListIdItemsAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 return validate_required(request.data, 'name', 'price', 'status'), 400
         else:
@@ -555,41 +590,49 @@ class ShoppingListIdItemsAPI(MethodView):
                 if not isinstance(user_id, str):
                     user = User.query.filter_by(id=user_id).first()
                     if user:
-                        shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
                         if not shoppinglist:
                             response = {
                                 'status': 'fail',
                                 'message': 'Shopping List not found'
                             }
-                            return make_response(jsonify(response))
+                            return make_response(jsonify(response)), 404
 
-                        shoppinglistitems = Item.query.filter_by(shopping_list_id=id).all()
+                        shoppinglistitems = Item.query.filter_by(
+                            shopping_list_id=id).all()
                         if shoppinglistitems:
                             items = []
                             for item in shoppinglistitems:
-                                item_JSON = {
-                                    'id': item.id,
-                                    'name': item.name,
-                                    'price': item.price,
-                                    'status': item.status,
-                                    'created_on': item.created_on,
-                                    'modified_on': item.modified_on,
-                                    'shopping_list_id': item.shopping_list_id
-                                }
-                                items.append(item_JSON)
-                            return make_response(jsonify(items)), 200
-                        else:
+                                items.append(
+                                    {
+                                        'id': item.id,
+                                        'name': item.name,
+                                        'price': item.price,
+                                        'status': item.status,
+                                        'created_on': item.created_on,
+                                        'modified_on': item.modified_on,
+                                        'shopping_list_id': item.shopping_list_id
+                                    }
+                                )
                             response = {
                                 'status': 'success',
+                                'message': 'Shopping List Items found.',
+                                'shoppingListItems': items
+                            }
+                            return make_response(jsonify(response)), 200
+                        else:
+                            response = {
+                                'status': 'fail',
                                 'message': 'No Shopping List Items found'
                             }
-                            return make_response(jsonify(response)), 204
+                            return make_response(jsonify(response)), 404
                     else:
                         response = {
                             'status': 'fail',
                             'message': 'User not found'
                         }
-                        return make_response(jsonify(response)), 401
+                        return make_response(jsonify(response)), 404
                 else:
                     response = {
                         'status': 'fail',
@@ -602,7 +645,7 @@ class ShoppingListIdItemsAPI(MethodView):
                     'status': 'fail',
                     'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
@@ -630,21 +673,25 @@ class ShoppingListIdItemsIdAPI(MethodView):
                         }
                         return make_response(jsonify(response))
                     item = Item.query.filter_by(id=item_id).first()
-                    response = {
-                        'id': item.id,
-                        'name': item.name,
-                        'price': item.price,
-                        'status': item.status,
-                        'created_on': item.created_on,
-                        'modified_on': item.modified_on,
-                        'shopping_list_id': item.shopping_list_id
-                    }
                     if not item:
                         response = {
                             'status': 'fail',
                             'message': 'Shopping List Item not found'
                         }
-                        return make_response(jsonify(response)), 204
+                        return make_response(jsonify(response)), 404
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping List Item found.',
+                        'shoppingListItem': {
+                            'id': item.id,
+                            'name': item.name,
+                            'price': item.price,
+                            'status': item.status,
+                            'created_on': item.created_on,
+                            'modified_on': item.modified_on,
+                            'shopping_list_id': item.shopping_list_id
+                        }
+                    }
                     return make_response(jsonify(response)), 200
                 else:
                     response = {
@@ -658,7 +705,7 @@ class ShoppingListIdItemsIdAPI(MethodView):
                     'status': 'fail',
                     'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
@@ -676,35 +723,36 @@ class ShoppingListIdItemsIdAPI(MethodView):
                     # Get the user id related to this access token
                     user_id = User.decode_auth_token(auth_token)
                     if not isinstance(user_id, str):
-                        shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
                         item = Item.query.filter_by(id=item_id).first()
                         if not shoppinglist or not item:
                             response = {
                                 'status': 'fail',
                                 'message': 'Shopping List not found'
                             }
-                            return make_response(jsonify(response))
+                            return make_response(jsonify(response)), 404
                         new_name = str(request.data['new_name'])
                         new_price = str(request.data['new_price'])
                         new_status = str(request.data['new_status'])
-                        if new_price:
-                            new_price = int(new_price)
-                        status_bool = False
-                        if new_status.lower == "true":
-                            status_bool = True
+
                         item.name = new_name
                         item.price = new_price
-                        item.status = status_bool
+                        item.status = new_status
                         item.modified_on = datetime.now()
                         item.save()
                         response = {
-                            'id': item.id,
-                            'name': item.name,
-                            'price': item.price,
-                            'status': item.status,
-                            'created_on': item.created_on,
-                            'modified_on': item.modified_on,
-                            'shopping_list_id': item.shopping_list_id
+                            'status': 'success',
+                            'message': 'Shopping List Item edited.',
+                            'shoppingListItem': {
+                                'id': item.id,
+                                'name': item.name,
+                                'price': item.price,
+                                'status': item.status,
+                                'created_on': item.created_on,
+                                'modified_on': item.modified_on,
+                                'shopping_list_id': item.shopping_list_id
+                            }
                         }
                         return make_response(jsonify(response)), 200
                     else:
@@ -719,7 +767,7 @@ class ShoppingListIdItemsIdAPI(MethodView):
                         'status': 'fail',
                         'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
                 return validate_required(request.data, 'new_name', 'new_price', 'new_status'), 400
 
@@ -744,18 +792,20 @@ class ShoppingListIdItemsIdAPI(MethodView):
                             'status': 'fail',
                             'message': 'Shopping List not found'
                         }
-                        return make_response(jsonify(response))
+                        return make_response(jsonify(response)), 404
                     item = Item.query.filter_by(id=item_id).first()
                     if not item:
                         response = {
                             'status': 'fail',
                             'message': 'Shopping List Item not found'
                         }
-                        return make_response(jsonify(response))
+                        return make_response(jsonify(response)), 404
                     item.delete()
-                    return {
-                        "message": "Shopping list Item {} deleted".format(item.id)
-                    }, 200
+                    response = {
+                        "status": "success",
+                        "message": "Shopping list Item '{}' deleted".format(item.name)
+                    }
+                    return make_response(jsonify(response)), 200
                 else:
                     response = {
                         'status': 'fail',
@@ -790,22 +840,39 @@ class ShoppingListSearchAPI(MethodView):
                 user_id = User.decode_auth_token(auth_token)
                 if not isinstance(user_id, str):
                     # q = str(request.data['query'])
-                    shoppinglists = ShoppingList.query
+                    shoppinglists = ShoppingList.query.filter_by(
+                        user_id=user_id)
                     if q:
-                        shoppinglists = shoppinglists.filter(ShoppingList.title.like('%' + q + '%'))
+                        shoppinglists = shoppinglists.filter(
+                            ShoppingList.title.ilike(q.lower() + '%')
+                        )
 
-                    shoppinglists = shoppinglists.order_by(ShoppingList.title).limit(limit).all()
+                    shoppinglists = shoppinglists.order_by(
+                        ShoppingList.title).paginate(1, limit, error_out=False).items
+
+                    if not shoppinglists:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping Lists not found'
+                        }
+                        return make_response(jsonify(response)), 404
                     the_lists = []
                     for a_list in shoppinglists:
-                        the_list = {
-                            'id': a_list.id,
-                            'title': a_list.title,
-                            'user_id': a_list.user_id,
-                            'created_on': a_list.created_on,
-                            'modified_on': a_list.modified_on
-                        }
-                        the_lists.append(the_list)
-                    return make_response(jsonify(the_lists)), 200
+                        the_lists.append(
+                            {
+                                'id': a_list.id,
+                                'title': a_list.title,
+                                'user_id': a_list.user_id,
+                                'created_on': a_list.created_on,
+                                'modified_on': a_list.modified_on
+                            }
+                        )
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping Lists found.',
+                        'shoppingLists': the_lists
+                    }
+                    return make_response(jsonify(response)), 200
                 else:
                     response = {
                         'status': 'fail',
@@ -818,7 +885,7 @@ class ShoppingListSearchAPI(MethodView):
                     'status': 'fail',
                     'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
@@ -839,24 +906,37 @@ class ItemSearchAPI(MethodView):
                 # Get the user id related to this access token
                 user_id = User.decode_auth_token(auth_token)
                 if not isinstance(user_id, str):
-                    items = Item.query
+                    items = None
                     if q:
-                        items = items.filter(Item.name.like('%' + q + '%'))
+                        items = Item.query.filter_by(user_id=user_id)
+                        items = items.filter(Item.name.ilike(q + '%'))
+                        items = items.order_by(Item.name).paginate(1, limit, error_out=False).items
 
-                    items = items.order_by(Item.name).limit(limit).all()
+                    if not items:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List Items not found'
+                        }
+                        return make_response(jsonify(response)), 404
                     the_items = []
                     for an_item in items:
-                        the_item = {
-                            'id': an_item.id,
-                            'name': an_item.name,
-                            'price': an_item.price,
-                            'status': an_item.status,
-                            'created_on': an_item.created_on,
-                            'modified_on': an_item.modified_on,
-                            'shopping_list_id': an_item.shopping_list_id
-                        }
-                        the_items.append(the_item)
-                    return make_response(jsonify(the_items)), 200
+                        the_items.append(
+                            {
+                                'id': an_item.id,
+                                'name': an_item.name,
+                                'price': an_item.price,
+                                'status': an_item.status,
+                                'created_on': an_item.created_on,
+                                'modified_on': an_item.modified_on,
+                                'shopping_list_id': an_item.shopping_list_id
+                            }
+                        )
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping List Items found.',
+                        'shoppingListItems': the_items
+                    }
+                    return make_response(jsonify(response)), 200
                 else:
                     response = {
                         'status': 'fail',
@@ -884,9 +964,12 @@ logout_api = LogoutAPI.as_view('logout_api')
 reset_password_api = ResetPasswordAPI.as_view('reset_password_api')
 shopping_lists_api = ShoppingListAPI.as_view('shopping_lists_api')
 shopping_lists_id_api = ShoppingListIdAPI.as_view('shopping_lists_id_api')
-shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view('shopping_lists_id_items_api')
-shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view('shopping_lists_id_items_id_api')
-shopping_lists_search_api = ShoppingListSearchAPI.as_view('shopping_lists_search_api')
+shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view(
+    'shopping_lists_id_items_api')
+shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view(
+    'shopping_lists_id_items_id_api')
+shopping_lists_search_api = ShoppingListSearchAPI.as_view(
+    'shopping_lists_search_api')
 items_search_api = ItemSearchAPI.as_view('items_search_api')
 
 

@@ -99,8 +99,9 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                   data=self.shopping_list_1)
         self.assertEqual(rv_3.status_code, 201)
         result_in_json = json.loads(rv_3.data.decode('utf-8').replace("'", "\""))
+        import pdb
         result = self.client().get(
-            '/v1/shoppinglists/{}'.format(result_in_json['id']),
+            '/v1/shoppinglists/{}'.format(result_in_json['shoppingList']['id']),
             headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(result.status_code, 200)
         self.assertIn('From Supermarket', str(result.data))
@@ -204,7 +205,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv_4.status_code, 201)
         res = self.client().delete('/v1/shoppinglists/1/items/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
-        self.assertIn('Shopping list Item 1 deleted', str(res.data))
+        self.assertIn('Shopping list Item \\\'Sugar\\\' deleted', str(res.data))
 
     def test_shopping_list_search(self):
         """Test API can search for a shopping list (GET request)"""
