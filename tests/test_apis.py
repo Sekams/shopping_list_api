@@ -219,7 +219,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                  data=self.shopping_list_1)
         self.assertEqual(res.status_code, 201)
         self.assertIn('From Supermarket', str(res.data))
-        search_res =  self.client().get('/v1/shoppinglists/search/shoppinglist/From/1', headers=dict(Authorization="Bearer " + access_token))
+        search_res =  self.client().get('/v1/shoppinglists/search/shoppinglist/From/1/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(search_res.status_code, 200)
         self.assertIn('From Supermarket', str(search_res.data))
 
@@ -239,7 +239,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                   headers=dict(Authorization="Bearer " + access_token),
                                   data=self.item_1)
         self.assertEqual(rv_4.status_code, 201)
-        search_res =  self.client().get('/v1/shoppinglists/search/item/Sugar/1', headers=dict(Authorization="Bearer " + access_token))
+        search_res =  self.client().get('/v1/shoppinglists/search/item/Sugar/1/1', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(search_res.status_code, 200)
         self.assertIn('Sugar', str(search_res.data))
 
