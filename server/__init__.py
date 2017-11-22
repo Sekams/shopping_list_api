@@ -10,30 +10,6 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     db.init_app(app)
 
-    @app.errorhandler(405)
-    def not_allowed(error):
-        response = {
-            'status': 'fail',
-            'message': 'Please check the url you entered and try again'
-        }
-        return make_response(jsonify(response), 405)
-
-    @app.errorhandler(404)
-    def not_found(error):
-        response = {
-            'status': 'fail',
-            'message': 'Page not found'
-        }
-        return make_response(jsonify(response), 404)
-
-    @app.errorhandler(500)
-    def server_error(error):
-        response = {
-            'status': 'fail',
-            'message': 'Something went wrong. Please try again'
-        }
-        return make_response(jsonify(response), 404)
-
     # decorator used to allow cross origin requests
     @app.after_request
     def apply_cross_origin_header(response):
