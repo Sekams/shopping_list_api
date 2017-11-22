@@ -1,2 +1,2 @@
-instance = 'production'
+instance = 'development'
     
