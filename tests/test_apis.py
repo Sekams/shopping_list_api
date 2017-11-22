@@ -21,6 +21,12 @@ class ShoppingListAPITestCase(unittest.TestCase):
         with self.app.app_context():
             db.create_all()
 
+    def test_index(self):
+        """Test API renders index page"""
+        res = self.client().get("/")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('Shopping List API Documentation', str(res.data))
+
     def test_register(self):
         """Test API can create a new user (POST request)"""
         res = self.client().post('/v1/auth/register', data=self.new_user)
