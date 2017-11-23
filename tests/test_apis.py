@@ -90,6 +90,12 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertIn('You registered successfully. Please log in.', str(res.data))
 
+    def test_register_exception(self):
+        """Test API can catch registration exception (POST request)"""
+        res = self.client().post('/v1/auth/register', data={"username": str("abc" * 100), "password": "123456", "email": "this.is@not.working"})
+        self.assertEqual(res.status_code, 500)
+        self.assertIn('Something went wrong. Please try again', str(res.data))
+
     def test_login(self):
         """Test API can login a user (POST request)"""
         rv = self.client().post('/v1/auth/register', data=self.new_user)
@@ -97,6 +103,14 @@ class ShoppingListAPITestCase(unittest.TestCase):
         res = self.client().post('/v1/auth/login', data=self.user)
         self.assertEqual(res.status_code, 200)
         self.assertIn('You logged in successfully.', str(res.data))
+
+    def test_login_invalid_data(self):
+        """Test API can catch login invalid data (POST request)"""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        res = self.client().post('/v1/auth/login', data={"username": "", "password": "123456"})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter value for username', str(res.data))
 
     def test_logout(self):
         """Test API can logout a user (POST request)."""
@@ -108,6 +122,18 @@ class ShoppingListAPITestCase(unittest.TestCase):
         res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
         self.assertIn('Successfully logged out.', str(res.data))
+
+    def test_logout_invalid(self):
+        """Test API can catch invalid logout data (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer "))
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('Provide an authentication token.', str(res.data))
+
 
     def test_invalid_token(self):
         """Test API can detect invalid token (POST request)."""
@@ -135,6 +161,60 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         self.assertIn('You have successfully changed your password.', str(res.data))
 
+    def test_reset_password_incomplete(self):
+        """Test API can catch incomplete info for password reset (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        self.user_pw_rst["old_password"] = ""     
+        res = self.client().post('/v1/auth/reset-password',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.user_pw_rst)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter value for old_password', str(res.data))
+
+    def test_reset_password_wrong_old_password(self):
+        """Test API can catch wrong old password for password reset (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        self.user_pw_rst["old_password"] = "3ffefref3f"     
+        res = self.client().post('/v1/auth/reset-password',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.user_pw_rst)
+        self.assertEqual(res.status_code, 401)
+        self.assertIn('Invalid old password', str(res.data))
+
+    def test_reset_no_token(self):
+        """Test API can catch a missing token (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/v1/auth/reset-password',
+                                 headers=dict(Authorization="Bearer "),
+                                 data=self.user_pw_rst)
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('Provide an authentication token.', str(res.data))
+
+    def test_reset_invalid_token(self):
+        """Test API can catch an invalid token for resetting password (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/v1/auth/reset-password',
+                                 headers=dict(Authorization="Bearer " + "env3irbv3riei"),
+                                 data=self.user_pw_rst)
+        self.assertEqual(res.status_code, 401)
+        self.assertIn('Provide a valid authentication token.', str(res.data))
+
     def test_shopping_list_creation(self):
         """Test API can create a shopping list (POST request)"""
         rv = self.client().post('/v1/auth/register', data=self.new_user)
@@ -147,6 +227,35 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                  data=self.shopping_list_1)
         self.assertEqual(res.status_code, 201)
         self.assertIn('From Supermarket', str(res.data))
+
+    def test_shopping_list_creation_no_token(self):
+        """Test API can catch a missing token in shopping list (POST request)"""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/v1/shoppinglists/',
+                                 headers=dict(Authorization="Bearer "),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('Provide an authentication token.', str(res.data))
+
+    def test_shopping_list_duplication(self):
+        """Test API can duplicate a shopping list (POST request)"""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']     
+        res = self.client().post('/v1/shoppinglists/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        res_2 = self.client().post('/v1/shoppinglists/',
+                                 headers=dict(Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res_2.status_code, 409)
+        self.assertIn('Shopping List already exists', str(res_2.data))
 
     def test_shopping_list_retrieval(self):
         """Test API can get a shopping list (GET request)."""

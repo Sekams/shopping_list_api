@@ -62,38 +62,29 @@ class LoginAPI(MethodView):
         """Handle POST request for this view. Url ---> /v1/auth/login"""
 
         if validate_required(request.data, 'username', 'password')['status'] == 'success':
-            try:
-                # Get the user object using their email (unique to every user)
-                user = User.query.filter_by(
-                    username=request.data['username'].lower()).first()
+            # Get the user object using their email (unique to every user)
+            user = User.query.filter_by(
+                username=request.data['username'].lower()).first()
 
-                # Try to authenticate the found user using their password
-                if user and user.validate_password(request.data['password']):
+            # Try to authenticate the found user using their password
+            if user and user.validate_password(request.data['password']):
                     # Generate the access token. This will be used as the authorization header
-                    access_token = user.generate_auth_token(user.id, 86400)
-                    if access_token:
-                        response = {
-                            'status': 'success',
-                            'message': 'You logged in successfully.',
-                            'access_token': access_token.decode()
-                        }
-                        return make_response(jsonify(response)), 200
-                else:
-                    # User does not exist. Therefore, we return an error message
+                access_token = user.generate_auth_token(user.id, 86400)
+                if access_token:
                     response = {
-                        'status': 'fail',
-                        'message': 'Invalid username or password, Please try again'
+                        'status': 'success',
+                        'message': 'You logged in successfully.',
+                        'access_token': access_token.decode()
                     }
-                    return make_response(jsonify(response)), 401
-
-            except Exception as e:
-                # Create a response containing an string error message
+                    return make_response(jsonify(response)), 200
+            else:
+                # User does not exist. Therefore, we return an error message
                 response = {
                     'status': 'fail',
-                    'message': 'Something went wrong. Please try again: ' + str(e)
+                    'message': 'Invalid username or password, Please try again'
                 }
-                # Return a server error using the HTTP Error Code 500 (Internal Server Error)
-                return make_response(jsonify(response)), 500
+                return make_response(jsonify(response)), 401
+
         else:
             return validate_required(request.data, 'username', 'password'), 400
 
@@ -910,7 +901,8 @@ class ItemSearchAPI(MethodView):
                     if q:
                         items = Item.query.filter_by(user_id=user_id)
                         items = items.filter(Item.name.ilike(q + '%'))
-                        items = items.order_by(Item.name).paginate(page, limit, error_out=False).items
+                        items = items.order_by(Item.name).paginate(
+                            page, limit, error_out=False).items
 
                     if not items:
                         response = {
