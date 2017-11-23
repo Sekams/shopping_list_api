@@ -9,7 +9,8 @@ class UserTestCase(unittest.TestCase):
         """Set up test variables."""
         self.app = create_app("testing")
 
-        self.invalid_user = User('regina', 'regina@example.com', '123456')
+        self.user = User(
+            'regina_phalange', 'regina@example.com', '123456')
 
         with self.app.app_context():
             # create all tables
@@ -19,4 +20,14 @@ class UserTestCase(unittest.TestCase):
 
     def test_invalid_auth_token(self):
         """Test invalid authentication token"""
-        self.assertEqual("Object of type '_BoundDeclarativeMeta' is not JSON serializable", self.invalid_user.generate_auth_token(User))
+        self.assertEqual("Object of type '_BoundDeclarativeMeta' is not JSON serializable",
+                         self.user.generate_auth_token(User))
+
+    def test_blacklisted_auth_token(self):
+        """Test blacklisted authentication token"""
+
+        with self.app.app_context():
+            self.user.save()
+            user = User.query.filter_by(username=self.user.username).first()
+            token = self.user.generate_auth_token(user.id)
+            self.assertEqual("Invalid token. Please log in again.", self.user.decode_auth_token("riignrgnrg"))
