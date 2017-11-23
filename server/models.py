@@ -32,14 +32,14 @@ class User(db.Model):
         """
         return Bcrypt().check_password_hash(self.password, password)
 
-    def generate_auth_token(self, user_id):
+    def generate_auth_token(self, user_id, duration_in_seconds):
         """
         Generates the Auth Token
         :return: string
         """
         try:
             payload = {
-                'exp': datetime.utcnow() + timedelta(hours=24),
+                'exp': datetime.utcnow() + timedelta(seconds=duration_in_seconds),
                 'iat': datetime.utcnow(),
                 'sub': user_id
             }
@@ -97,17 +97,9 @@ class ShoppingList(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    @staticmethod
-    def get_all(user_db_id):
-        return ShoppingList.query.filter_by(user_id=user_db_id)
-
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-    def __repr__(self):
-        return '<ShoppingList {}}>'.format(self.title)
-
 
 class Item(db.Model):
     """Model for the item table"""
@@ -135,17 +127,9 @@ class Item(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    @staticmethod
-    def get_all():
-        return Item.query.all()
-
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-    def __repr__(self):
-        return '<Item {}>'.format(self.name)
-
 
 class BlacklistToken(db.Model):
     """
@@ -160,9 +144,6 @@ class BlacklistToken(db.Model):
     def __init__(self, token):
         self.token = token
         self.blacklisted_on = datetime.now()
-
-    def __repr__(self):
-        return '<id: token: {}'.format(self.token)
 
     @staticmethod
     def check_blacklist(auth_token):

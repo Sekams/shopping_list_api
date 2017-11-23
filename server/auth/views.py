@@ -70,7 +70,7 @@ class LoginAPI(MethodView):
                 # Try to authenticate the found user using their password
                 if user and user.validate_password(request.data['password']):
                     # Generate the access token. This will be used as the authorization header
-                    access_token = user.generate_auth_token(user.id)
+                    access_token = user.generate_auth_token(user.id, 86400)
                     if access_token:
                         response = {
                             'status': 'success',

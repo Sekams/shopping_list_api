@@ -21,13 +21,20 @@ class UserTestCase(unittest.TestCase):
     def test_auth_token_exception(self):
         """Test authentication token exception"""
         self.assertEqual("Object of type '_BoundDeclarativeMeta' is not JSON serializable",
-                         self.user.generate_auth_token(User))
+                         self.user.generate_auth_token(User, 1))
 
 
     def test_invalid_auth_token(self):
         """Test invalid authentication token"""
+        with self.app.app_context():
+            self.user.save()
+            self.assertEqual("Invalid token. Please log in again.", self.user.decode_auth_token("riignrgnrg"))
+
+    def test_expired_auth_token(self):
+        """Test expired authentication token"""
 
         with self.app.app_context():
             self.user.save()
             user = User.query.filter_by(username=self.user.username).first()
-            self.assertEqual("Invalid token. Please log in again.", self.user.decode_auth_token("riignrgnrg"))
+            token = self.user.generate_auth_token(user.id, -86400)
+            self.assertEqual("Signature expired. Please log in again.", self.user.decode_auth_token(token))
