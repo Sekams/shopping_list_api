@@ -31,9 +31,8 @@ class TestingConfig(BaseConfig):
 class ProductionConfig(BaseConfig):
     """Production configuration."""
     DEBUG = False
-    if os.environ.get('DATABASE_URL') is None:
-        SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://' + secret_key + '@localhost/the-real-shopping-list-api'
-    else:
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://' + secret_key + '@localhost/the-real-shopping-list-api'
+    if os.environ.get('DATABASE_URL'):
         SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
 
 app_config = {
