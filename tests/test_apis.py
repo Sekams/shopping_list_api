@@ -62,12 +62,27 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn('Please provide the required parameter value for email', str(res.data))
 
+
+    def test_incomplete_data_2(self):
+        """Test API detect incomplete user data (POST request)"""
+        self.new_user['email'] = 'homie@duffbeercom'
+        res = self.client().post('/v1/auth/register', data=self.user)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter value for email', str(res.data))
+
+    def test_missing_data(self):
+        """Test API detect missing user data (POST request)"""
+        self.new_user['email'] = 'homie@duffbeercom'
+        res = self.client().post('/v1/auth/register', data={'password': 'duffbeer'})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter values for username, email', str(res.data))
+
     def test_empty_data(self):
         """Test API detect empty user data (POST request)"""
         self.new_user['email'] = 'homie@duffbeercom'
-        res = self.client().post('/v1/auth/register', data={'username': '', 'email': 'homie@duffbeer.com', 'password': 'duffbeer'})
+        res = self.client().post('/v1/auth/register', data={'username': '', 'email': '', 'password': 'duffbeer'})
         self.assertEqual(res.status_code, 400)
-        self.assertIn('Please provide the required parameter value for username', str(res.data))
+        self.assertIn('Please provide the required parameter values for username, email', str(res.data))
 
     def test_register(self):
         """Test API can create a new user (POST request)"""
