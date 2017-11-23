@@ -109,6 +109,19 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('Successfully logged out.', str(res.data))
 
+    def test_invalid_token(self):
+        """Test API can detect invalid token (POST request)."""
+        rv = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2 = self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token = json.loads(rv_2.data.decode())['access_token']
+        res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(res.status_code, 200)
+        res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(res.status_code, 401)
+        self.assertIn('Provide a valid authentication token.', str(res.data))
+
     def test_reset_password(self):
         """Test API can reset a user password (POST request)."""
         rv = self.client().post('/v1/auth/register', data=self.new_user)

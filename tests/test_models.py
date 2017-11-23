@@ -23,11 +23,22 @@ class UserTestCase(unittest.TestCase):
         self.assertEqual("Object of type '_BoundDeclarativeMeta' is not JSON serializable",
                          self.user.generate_auth_token(User))
 
-    def test_blacklisted_auth_token(self):
-        """Test blacklisted authentication token"""
+    # def test_blacklisted_auth_token(self):
+    #     """Test blacklisted authentication token"""
+
+    #     with self.app.app_context():
+    #         self.user.save()
+    #         user = User.query.filter_by(username=self.user.username).first()
+    #         token = self.user.generate_auth_token(user.id)
+    #         blacklist_token = BlacklistToken(token=token)
+    #         db.session.add(blacklist_token)
+    #         db.session.commit()
+    #         self.assertEqual("Token blacklisted. Please log in again.", self.user.decode_auth_token(token))
+
+    def test_invalid_auth_token(self):
+        """Test invalid authentication token"""
 
         with self.app.app_context():
             self.user.save()
             user = User.query.filter_by(username=self.user.username).first()
-            token = self.user.generate_auth_token(user.id)
             self.assertEqual("Invalid token. Please log in again.", self.user.decode_auth_token("riignrgnrg"))
