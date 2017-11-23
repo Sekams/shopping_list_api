@@ -62,6 +62,13 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn('Please provide the required parameter value for email', str(res.data))
 
+    def test_empty_data(self):
+        """Test API detect empty user data (POST request)"""
+        self.new_user['email'] = 'homie@duffbeercom'
+        res = self.client().post('/v1/auth/register', data={'username': '', 'email': 'homie@duffbeer.com', 'password': 'duffbeer'})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter value for username', str(res.data))
+
     def test_register(self):
         """Test API can create a new user (POST request)"""
         res = self.client().post('/v1/auth/register', data=self.new_user)
