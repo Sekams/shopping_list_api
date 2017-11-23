@@ -18,8 +18,8 @@ class UserTestCase(unittest.TestCase):
             db.drop_all()
             db.create_all()
 
-    def test_invalid_auth_token(self):
-        """Test invalid authentication token"""
+    def test_auth_token_exception(self):
+        """Test authentication token exception"""
         self.assertEqual("Object of type '_BoundDeclarativeMeta' is not JSON serializable",
                          self.user.generate_auth_token(User))
 

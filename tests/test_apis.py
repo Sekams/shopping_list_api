@@ -118,9 +118,9 @@ class ShoppingListAPITestCase(unittest.TestCase):
         access_token = json.loads(rv_2.data.decode())['access_token']
         res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(res.status_code, 200)
-        res = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
-        self.assertEqual(res.status_code, 401)
-        self.assertIn('Provide a valid authentication token.', str(res.data))
+        res_2 = self.client().post('/v1/auth/logout', headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(res_2.status_code, 401)
+        self.assertIn('Provide a valid authentication token.', str(res_2.data))
 
     def test_reset_password(self):
         """Test API can reset a user password (POST request)."""
