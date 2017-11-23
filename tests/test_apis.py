@@ -27,6 +27,13 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('Shopping List API Documentation', str(res.data))
 
+    def test_invalid_parameters(self):
+        """Test API detect invalid data user (POST request)"""
+        self.new_user['email'] = 'homie.duffbeer.com'
+        res = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Email address is invalid', str(res.data))
+
     def test_register(self):
         """Test API can create a new user (POST request)"""
         res = self.client().post('/v1/auth/register', data=self.new_user)

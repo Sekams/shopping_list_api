@@ -55,8 +55,11 @@ def validate_token(request):
     return auth_token
 
 def validate_email(email):
-    first_part = email.split('@', 1)[0]
-    second_part = email.split('@', 1)[1]
-    if '@' in second_part or second_part.count('.') > 1 or '.' not in second_part or len(first_part) == 0:
+    if '@' in email:
+        first_part = email.split('@', 1)[0]
+        second_part = email.split('@', 1)[1]
+        if '@' in second_part or second_part.count('.') > 1 or '.' not in second_part or len(first_part) == 0:
+            return False
+    else:
         return False
     return True
