@@ -27,12 +27,26 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('Shopping List API Documentation', str(res.data))
 
-    def test_invalid_parameters(self):
-        """Test API detect invalid data user (POST request)"""
+    def test_invalid_email_1(self):
+        """Test API detect invalid email (POST request)"""
         self.new_user['email'] = 'homie.duffbeer.com'
         res = self.client().post('/v1/auth/register', data=self.new_user)
         self.assertEqual(res.status_code, 400)
         self.assertIn('Email address is invalid', str(res.data))
+
+    def test_invalid_email_2(self):
+        """Test API detect an invalid email (POST request)"""
+        self.new_user['email'] = 'homie@duffbeercom'
+        res = self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Email address is invalid', str(res.data))
+
+    def test_incomplete_data(self):
+        """Test API detect incomplete data (POST request)"""
+        self.new_user['email'] = 'homie@duffbeercom'
+        res = self.client().post('/v1/auth/register', data={})
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter values for username, password, email', str(res.data))
 
     def test_register(self):
         """Test API can create a new user (POST request)"""
