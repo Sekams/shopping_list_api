@@ -429,14 +429,13 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv.status_code, 201)
         rv_2=self.client().post('/v1/auth/login', data=self.user)
         self.assertEqual(rv_2.status_code, 200)
-        # access_token=json.loads(rv_2.data.decode())['access_token']
-        # rv_3=self.client().post('/v1/shoppinglists/',
-        #                           headers=dict(
-        #                               Authorization="Bearer " + access_token),
-        #                           data=self.shopping_list_1)
-        # self.assertEqual(rv_3.status_code, 201)
-        # result_in_json=json.loads(rv_3.data.decode('utf-8').replace("'", "\""))
-        # import pdb
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        result_in_json=json.loads(rv_3.data.decode('utf-8').replace("'", "\""))
         result=self.client().get(
             '/v1/shoppinglists/{}'.format(
                 result_in_json['shoppingList']['id']),
