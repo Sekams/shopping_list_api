@@ -262,7 +262,7 @@ class ShoppingListAPI(MethodView):
                     user = User.query.filter_by(id=user_id).first()
                     if user:
                         shopping_lists = ShoppingList.query.filter_by(
-                            user_id=user_id)
+                            user_id=user_id).all()
 
                         if not shopping_lists:
                             response = {
