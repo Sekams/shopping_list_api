@@ -443,6 +443,26 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(result.status_code, 401)
         self.assertIn('Provide a valid authentication token', str(result.data))
 
+    def test_shopping_list_retrieval_by_id_missing_token(self):
+        """Test API can detect a missing token in shopping list retrieval by id. (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        result_in_json=json.loads(rv_3.data.decode('utf-8').replace("'", "\""))
+        result=self.client().get(
+            '/v1/shoppinglists/{}'.format(
+                result_in_json['shoppingList']['id']),
+            headers=dict(Authorization="Bearer "))
+        self.assertEqual(result.status_code, 403)
+        self.assertIn('Provide an authentication token', str(result.data))
+
     def test_shopping_list_editing(self):
         """Test API can edit an existing shopping list. (PUT request)"""
         rv=self.client().post('/v1/auth/register', data=self.new_user)
@@ -465,6 +485,111 @@ class ShoppingListAPITestCase(unittest.TestCase):
         results=self.client().get('/v1/shoppinglists/1',
                             headers=dict(Authorization="Bearer " + access_token))
         self.assertIn('Easter List', str(results.data))
+
+    def test_shopping_list_editing_no_list(self):
+        """Test API can detect a missing list on editing shopping list. (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post(
+            '/v1/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'Christmas List'})
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().put(
+            '/v1/shoppinglists/20',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_title": "Easter List"
+            })
+        self.assertEqual(rv_4.status_code, 404)
+        self.assertIn('Shopping List not found', str(rv_4.data))
+
+    def test_shopping_list_editing_invalid_token(self):
+        """Test API can detect an invalid token on editing shopping list. (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post(
+            '/v1/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'Christmas List'})
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().put(
+            '/v1/shoppinglists/20',
+            headers=dict(Authorization="Bearer qefmerfmrkfmre"),
+            data={
+                "new_title": "Easter List"
+            })
+        self.assertEqual(rv_4.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(rv_4.data))
+
+    def test_shopping_list_editing_exception(self):
+        """Test API can throw an exception on editing shopping list. (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post(
+            '/v1/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'Christmas List'})
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().put(
+            '/v1/shoppinglists/1',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_title": "abc" * 100
+            })
+        self.assertEqual(rv_4.status_code, 500)
+        self.assertIn('Something went wrong', str(rv_4.data))
+
+    def test_shopping_list_editing_no_title(self):
+        """Test API can detect a missing title on editing shopping list. (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post(
+            '/v1/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'Christmas List'})
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().put(
+            '/v1/shoppinglists/20',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_title": ""
+            })
+        self.assertEqual(rv_4.status_code, 400)
+        self.assertIn('Please provide the required parameter value for new_title', str(rv_4.data))
+
+    def test_shopping_list_editing_no_token(self):
+        """Test API can detect a authentication token on editing shopping list. (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        rv_3=self.client().post(
+            '/v1/shoppinglists/',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={'title': 'Christmas List'})
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().put(
+            '/v1/shoppinglists/20',
+            headers=dict(Authorization="Bearer "),
+            data={
+                "new_title": "Easter Shopping"
+            })
+        self.assertEqual(rv_4.status_code, 403)
+        self.assertIn('Provide an authentication token.', str(rv_4.data))
 
     def test_shopping_list_deletion(self):
         """Test API can delete an existing shopping list. (DELETE request)."""
