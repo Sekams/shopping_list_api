@@ -654,7 +654,7 @@ class ShoppingListIdItemsIdAPI(MethodView):
                             'status': 'fail',
                             'message': 'Shopping List not found'
                         }
-                        return make_response(jsonify(response))
+                        return make_response(jsonify(response)), 404
                     item = Item.query.filter_by(id=item_id).first()
                     if not item:
                         response = {

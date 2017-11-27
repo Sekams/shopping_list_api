@@ -975,6 +975,98 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res_3.status_code, 200)
         self.assertIn('Sugar', str(res_3.data))
 
+    def test_shopping_list_item_retrieval_no_shopping_list(self):
+        """Test API can detect a missing shopping list when retrieving a single shopping list item (POST request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        res=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_1)
+        self.assertEqual(res.status_code, 201)
+        res_3=self.client().get('/v1/shoppinglists/20/items/1',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token))
+        self.assertEqual(res_3.status_code, 404)
+        self.assertIn('Shopping List not found', str(res_3.data))
+
+    def test_shopping_list_item_retrieval_no_shopping_list_item(self):
+        """Test API can detect a missing shopping list item when retrieving a single shopping list item (POST request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        res=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_1)
+        self.assertEqual(res.status_code, 201)
+        res_3=self.client().get('/v1/shoppinglists/1/items/20',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token))
+        self.assertEqual(res_3.status_code, 404)
+        self.assertIn('Shopping List Item not found', str(res_3.data))
+
+    def test_shopping_list_item_retrieval_invalid_token(self):
+        """Test API can detect an invalid token when retrieving a single shopping list item (POST request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        res=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_1)
+        self.assertEqual(res.status_code, 201)
+        res_3=self.client().get('/v1/shoppinglists/1/items/20',
+                                 headers=dict(
+                                     Authorization="Bearer knihihiu"))
+        self.assertEqual(res_3.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(res_3.data))
+
+    def test_shopping_list_item_retrieval_no_token(self):
+        """Test API can detect a missing token when retrieving a single shopping list item (POST request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        res=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_1)
+        self.assertEqual(res.status_code, 201)
+        res_3=self.client().get('/v1/shoppinglists/1/items/20',
+                                 headers=dict(
+                                     Authorization="Bearer "))
+        self.assertEqual(res_3.status_code, 403)
+        self.assertIn('Provide an authentication token', str(res_3.data))
+
     def test_shopping_list_item_editing(self):
         """Test API can edit an existing shopping list item (PUT request)"""
         rv=self.client().post('/v1/auth/register', data=self.new_user)
@@ -1003,6 +1095,146 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn('Butter', str(res.data))
 
+    def test_shopping_list_item_editing_no_shopping_list(self):
+        """Test API can edit an existing shopping list item (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().put(
+            '/v1/shoppinglists/20/items/1',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_name": "Butter",
+                "new_price": "2000",
+                "new_status": "False"
+            })
+        self.assertEqual(res.status_code, 404)
+        self.assertIn('Shopping List not found', str(res.data))
+
+    def test_shopping_list_item_editing_invalid_token(self):
+        """Test API can detect an invalid token on editing a shopping list item (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().put(
+            '/v1/shoppinglists/1/items/1',
+            headers=dict(Authorization="Bearer rwrkmgworngw"),
+            data={
+                "new_name": "Butter",
+                "new_price": "2000",
+                "new_status": "False"
+            })
+        self.assertEqual(res.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(res.data))
+
+    def test_shopping_list_item_editing_exception(self):
+        """Test API can catch an exception on editing a shopping list item (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().put(
+            '/v1/shoppinglists/1/items/1',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_name": "abc" * 100,
+                "new_price": "2000",
+                "new_status": "False"
+            })
+        self.assertEqual(res.status_code, 500)
+        self.assertIn('Something went wrong', str(res.data))
+
+    def test_shopping_list_item_editing_missing_new_name(self):
+        """Test API can detect a missing new name on editing a shopping list item (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().put(
+            '/v1/shoppinglists/1/items/1',
+            headers=dict(Authorization="Bearer " + access_token),
+            data={
+                "new_name": "",
+                "new_price": "2000",
+                "new_status": "False"
+            })
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Please provide the required parameter value for new_name', str(res.data))
+
+    def test_shopping_list_item_editing_no_token(self):
+        """Test API can detect a missing token on editing a shopping list item (PUT request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_2)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().put(
+            '/v1/shoppinglists/1/items/1',
+            headers=dict(Authorization="Bearer "),
+            data={
+                "new_name": "Butter",
+                "new_price": "2000",
+                "new_status": "False"
+            })
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('Provide an authentication token', str(res.data))
+
     def test_shopping_list_item_deletion(self):
         """Test API can delete an existing shopping list item (DELETE request)"""
         rv=self.client().post('/v1/auth/register', data=self.new_user)
@@ -1026,6 +1258,94 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertIn(
             'Shopping list Item \\\'Sugar\\\' deleted', str(res.data))
 
+    def test_shopping_list_item_deletion_no_shopping_list(self):
+        """Test API can detect a missing shopping list when deleting an shopping list item (DELETE request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().delete('/v1/shoppinglists/20/items/1',
+                        headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(res.status_code, 404)
+        self.assertIn('Shopping List not found', str(res.data))
+
+    def test_shopping_list_item_deletion_no_shopping_list_item(self):
+        """Test API can detect a missing shopping list item when deleting an shopping list item (DELETE request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().delete('/v1/shoppinglists/1/items/20',
+                        headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(res.status_code, 404)
+        self.assertIn('Shopping List Item not found', str(res.data))
+
+    def test_shopping_list_item_deletion_invalid_token(self):
+        """Test API can detect an invalid token when deleting an shopping list item (DELETE request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().delete('/v1/shoppinglists/1/items/1',
+                        headers=dict(Authorization="Bearer rvrvervwrvwe"))
+        self.assertEqual(res.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(res.data))
+
+    def test_shopping_list_item_deletion_no_token(self):
+        """Test API can detect a missing token when deleting an shopping list item (DELETE request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        res=self.client().delete('/v1/shoppinglists/1/items/1',
+                        headers=dict(Authorization="Bearer "))
+        self.assertEqual(res.status_code, 403)
+        self.assertIn('Provide an authentication token', str(res.data))
+
     def test_shopping_list_search(self):
         """Test API can search for a shopping list (GET request)"""
         rv=self.client().post('/v1/auth/register', data=self.new_user)
@@ -1043,6 +1363,60 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(search_res.status_code, 200)
         self.assertIn('From Supermarket', str(search_res.data))
+
+    def test_shopping_list_search_no_shopping_list(self):
+        """Test API can detect a missing shopping list when searching for a shopping list (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        search_res=self.client().get('/v1/shoppinglists/search/shoppinglist/No list/1/1',
+                               headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(search_res.status_code, 404)
+        self.assertIn('Shopping Lists not found', str(search_res.data))
+
+    def test_shopping_list_search_invalid_token(self):
+        """Test API can detect an invalid token when searching for a shopping list (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        search_res=self.client().get('/v1/shoppinglists/search/shoppinglist/From/1/1',
+                               headers=dict(Authorization="Bearer rgrwfwerfgerf"))
+        self.assertEqual(search_res.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(search_res.data))
+
+    def test_shopping_list_search_no_token(self):
+        """Test API can detect a missing token when searching for a shopping list (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        search_res=self.client().get('/v1/shoppinglists/search/shoppinglist/From/1/1',
+                               headers=dict(Authorization="Bearer "))
+        self.assertEqual(search_res.status_code, 403)
+        self.assertIn('Provide an authentication token', str(search_res.data))
 
     def test_shopping_list_item_search(self):
         """Test API can search for a shopping list item (GET request)"""
@@ -1066,6 +1440,75 @@ class ShoppingListAPITestCase(unittest.TestCase):
                                headers=dict(Authorization="Bearer " + access_token))
         self.assertEqual(search_res.status_code, 200)
         self.assertIn('Sugar', str(search_res.data))
+
+    def test_shopping_list_item_search_no_shopping_list_item(self):
+        """Test API can detect a missing shopping list item when searching for it (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        search_res=self.client().get('/v1/shoppinglists/search/item/Cake/1/1',
+                               headers=dict(Authorization="Bearer " + access_token))
+        self.assertEqual(search_res.status_code, 404)
+        self.assertIn('Shopping List Items not found', str(search_res.data))
+
+    def test_shopping_list_item_search_invalid_token(self):
+        """Test API can detect an invalid token when searching for a shopping list item (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        search_res=self.client().get('/v1/shoppinglists/search/item/Cake/1/1',
+                               headers=dict(Authorization="Bearer rvneivevmovm"))
+        self.assertEqual(search_res.status_code, 401)
+        self.assertIn('Provide a valid authentication token', str(search_res.data))
+
+    def test_shopping_list_item_search_no_token(self):
+        """Test API can detect a missing token when searching for a shopping list item (GET request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        self.assertEqual(rv_2.status_code, 200)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        res=self.client().post('/v1/shoppinglists/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.shopping_list_1)
+        self.assertEqual(res.status_code, 201)
+        self.assertIn('From Supermarket', str(res.data))
+        rv_4=self.client().post('/v1/shoppinglists/1/items/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.item_1)
+        self.assertEqual(rv_4.status_code, 201)
+        search_res=self.client().get('/v1/shoppinglists/search/item/Cake/1/1',
+                               headers=dict(Authorization="Bearer "))
+        self.assertEqual(search_res.status_code, 403)
+        self.assertIn('Provide an authentication token', str(search_res.data))
 
     def tearDown(self):
         """Teardown all initialized variables."""
