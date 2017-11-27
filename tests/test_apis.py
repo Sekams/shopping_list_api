@@ -822,6 +822,35 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 403)
         self.assertIn('Provide an authentication token', str(res.data))
 
+    def test_shopping_list_item_batch_retrieval(self):
+        """Test API can retrieve batch shopping list items (POST request)"""
+        rv=self.client().post('/v1/auth/register', data=self.new_user)
+        self.assertEqual(rv.status_code, 201)
+        rv_2=self.client().post('/v1/auth/login', data=self.user)
+        access_token=json.loads(rv_2.data.decode())['access_token']
+        self.assertEqual(rv_2.status_code, 200)
+        rv_3=self.client().post('/v1/shoppinglists/',
+                                  headers=dict(
+                                      Authorization="Bearer " + access_token),
+                                  data=self.shopping_list_1)
+        self.assertEqual(rv_3.status_code, 201)
+        res=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_1)
+        self.assertEqual(res.status_code, 201)
+        res_1=self.client().post('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token),
+                                 data=self.item_2)
+        self.assertEqual(res_1.status_code, 201)
+        res_3=self.client().get('/v1/shoppinglists/1/items/',
+                                 headers=dict(
+                                     Authorization="Bearer " + access_token))
+        self.assertEqual(res_3.status_code, 200)
+        self.assertIn('Sugar', str(res_3.data))
+        self.assertIn('Salt', str(res_3.data))
+
     def test_shopping_list_item_editing(self):
         """Test API can edit an existing shopping list item (PUT request)"""
         rv=self.client().post('/v1/auth/register', data=self.new_user)
