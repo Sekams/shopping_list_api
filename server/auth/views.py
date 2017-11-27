@@ -251,7 +251,7 @@ class ShoppingListAPI(MethodView):
             }
             return make_response(jsonify(responseObject)), 403
 
-    def get(self):
+    def get(self, limit, page):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/"""
 
         auth_token = validate_token(request)
@@ -262,7 +262,7 @@ class ShoppingListAPI(MethodView):
                     user = User.query.filter_by(id=user_id).first()
                     if user:
                         shopping_lists = ShoppingList.query.filter_by(
-                            user_id=user_id).all()
+                            user_id=user_id).paginate(page, limit, error_out=False).items
 
                         if not shopping_lists:
                             response = {
@@ -563,7 +563,7 @@ class ShoppingListIdItemsAPI(MethodView):
             }
             return make_response(jsonify(responseObject)), 403
 
-    def get(self, id):
+    def get(self, id, limit, page):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
 
         auth_token = validate_token(request)
@@ -583,7 +583,7 @@ class ShoppingListIdItemsAPI(MethodView):
                             return make_response(jsonify(response)), 404
 
                         shoppinglistitems = Item.query.filter_by(
-                            shopping_list_id=id).all()
+                            shopping_list_id=id).paginate(page, limit, error_out=False).items
                         if shoppinglistitems:
                             items = []
                             for item in shoppinglistitems:
@@ -978,9 +978,14 @@ auth_blueprint.add_url_rule(
     methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/<int:limit>/<int:page>',
+    view_func=shopping_lists_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/',
     view_func=shopping_lists_api,
-    methods=['POST', 'GET']
+    methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>',
@@ -988,9 +993,14 @@ shoppinglists_blueprint.add_url_rule(
     methods=['DELETE', 'GET', 'PUT']
 )
 shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/<int:id>/items/<int:limit>/<int:page>',
+    view_func=shopping_lists_id_items_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>/items/',
     view_func=shopping_lists_id_items_api,
-    methods=['POST', 'GET']
+    methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>/items/<int:item_id>',

@@ -52,12 +52,12 @@ python run.py
 | POST | /v1/auth/logout | TRUE | Logs logged in users out |
 | POST | /v1/auth/reset-password | TRUE | Changes the password of a logged in user and takes **old\_password** and **new\_password** as arguments |
 | POST | /v1/shoppinglists/ | FALSE | Saves a given shopping list to the database and takes **title** as an argument |
-| GET | /v1/shoppinglists/ | FALSE | Gets all shopping lists in the database |
+| GET | /v1/shoppinglists/\<int:limit\>/\<int:page\> | FALSE | Gets all shopping lists in the database |
 | GET | /v1/shoppinglists/\<id\> | FALSE | Gets a shopping list with the provided id from the database |
 | PUT | /v1/shoppinglists/\<id\> | FALSE | Edits shopping list with the provided id and takes **new\_title** as an argument |
 | DELETE | /v1/shoppinglists/\<id\> | FALSE | Removes a shopping list with the provided id from the database |
 | POST | /v1/shoppinglists/\<id\>/items/ | FALSE | Saves a given shopping list item to the database and takes **name**, **price** and **status** as arguments |
-| GET | /v1/shoppinglists/\<id\>/items/ | FALSE | Gets all shopping list items belonging to a given shopping list from the database |
+| GET | /v1/shoppinglists/\<id\>/items/\<int:limit\>/\<int:page\> | FALSE | Gets all shopping list items belonging to a given shopping list from the database |
 | PUT | /v1/shoppinglists/\<id\>/items/\<item_id\>| FALSE | Edits shopping list item with the provided id and takes **new\_name**, **new\_price** and **new\_status** as arguments | 
 | DELETE | /v1/shoppinglists/\<id\>/items/\<item_id\> | FALSE | Removes a shopping list item with the provided id from the database |
 | GET | /v1/shoppinglists/search/shoppinglist/\<string:q\>/\<int:limit\>/\<int:page\> | FALSE | Searches for all shopping lists whose title starts with the query string **q** |
