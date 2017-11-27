@@ -503,46 +503,38 @@ class ShoppingListIdItemsAPI(MethodView):
                             name = str(request.data['name'])
                             price = str(request.data['price'])
                             status = str(request.data['status'])
-                            if name:
-                                shoppinglistitem = Item.query.filter_by(
-                                    name=name, shopping_list_id=id).first()
-                                if shoppinglistitem:
-                                    response = {
-                                        'status': 'fail',
-                                        'message': 'Shopping List Item exists'
-                                    }
-                                    return make_response(jsonify(response)), 409
-                                if price:
-                                    price = int(price)
-                                status_bool = False
-                                if status:
-                                    if status.lower == 'true':
-                                        status_bool = True
-
-                                item = Item(
-                                    name=name, price=price, status=status_bool, shopping_list_id=id, user_id=user_id)
-                                item.save()
-                                response = {
-                                    'status': 'success',
-                                    'message': 'Shopping List Item created.',
-                                    'shoppingListItem': {
-                                        'id': item.id,
-                                        'name': item.name,
-                                        'price': item.price,
-                                        'status': item.status,
-                                        'created_on': item.created_on,
-                                        'modified_on': item.modified_on,
-                                        'shopping_list_id': item.shopping_list_id
-                                    }
-                                }
-                                return make_response(jsonify(response)), 201
-
-                            else:
+                            shoppinglistitem = Item.query.filter_by(
+                                name=name, shopping_list_id=id).first()
+                            if shoppinglistitem:
                                 response = {
                                     'status': 'fail',
-                                    'message': 'Please enter Item name'
+                                    'message': 'Shopping List Item exists'
                                 }
-                                return make_response(jsonify(response)), 401
+                                return make_response(jsonify(response)), 409
+                            if price:
+                                price = int(price)
+                            status_bool = False
+                            if status:
+                                if status.lower == 'true':
+                                    status_bool = True
+
+                            item = Item(
+                                name=name, price=price, status=status_bool, shopping_list_id=id, user_id=user_id)
+                            item.save()
+                            response = {
+                                'status': 'success',
+                                'message': 'Shopping List Item created.',
+                                'shoppingListItem': {
+                                    'id': item.id,
+                                    'name': item.name,
+                                    'price': item.price,
+                                    'status': item.status,
+                                    'created_on': item.created_on,
+                                    'modified_on': item.modified_on,
+                                    'shopping_list_id': item.shopping_list_id
+                                }
+                            }
+                            return make_response(jsonify(response)), 201
                         else:
                             response = {
                                 'status': 'fail',
