@@ -1,6 +1,5 @@
 from flask_api import FlaskAPI
-from flask import request, jsonify, abort
-from flask_bcrypt import Bcrypt
+from flask import jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from server.config import app_config
 
@@ -11,12 +10,25 @@ def create_app(config_name):
     app.config.from_object(app_config[config_name])
     db.init_app(app)
 
-    @app.route("/")
-    def main():
-        return 'Welcome to the Shopping List API!'
+    # decorator used to allow cross origin requests
+    @app.after_request
+    def apply_cross_origin_header(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET,HEAD,OPTIONS," \
+                                                        "POST,PUT,DELETE"
+        response.headers["Access-Control-Allow-Headers"] = "Access-Control-Allow-"\
+            "Headers, Origin,Accept, X-Requested-With, Content-Type, " \
+            "Access-Control-Request-Method, Access-Control-Request-Headers," \
+            "Access-Control-Allow-Origin, Authorization"
+
+        return response
 
     from .auth import auth_blueprint, shoppinglists_blueprint
+    from .apiary.views import apiary
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(shoppinglists_blueprint)
+    app.register_blueprint(apiary)
 
     return app

@@ -1,67 +1,78 @@
 from . import auth_blueprint, shoppinglists_blueprint
-
+from datetime import datetime
 from flask.views import MethodView
-from flask import make_response, request, jsonify, json, abort
+from flask import make_response, request, jsonify
 from server.models import db, User, ShoppingList, Item, BlacklistToken, Bcrypt
+from server.helpers import validate_required, validate_token
 
 
 class RegisterAPI(MethodView):
     """This class registers a new user."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/register"""
+        """Handle POST request for this view. Url ---> /v1/auth/register"""
 
-        # Query to see if the user already exists
-        user = User.query.filter_by(username=request.data['username']).first()
+        if validate_required(request.data, 'username', 'password', 'email')['status'] == 'success':
+            # Query to see if the user already exists
+            user = User.query.filter_by(
+                username=request.data['username'].lower()).first()
 
-        if not user:
-            # There is no user so we'll try to register them
-            try:
-                post_data = request.data
-                # Register the user
-                username = post_data['username']
-                email = post_data['email']
-                password = post_data['password']
-                user = User(username=username, email=email, password=password)
-                user.save()
+            if not user:
+                # There is no user so we'll try to register them
+                try:
+                    post_data = request.data
+                    # Register the user
+                    username = post_data['username'].lower()
+                    email = post_data['email']
+                    password = post_data['password']
+                    user = User(username=username,
+                                email=email, password=password)
+                    user.save()
 
+                    response = {
+                        'status': 'success',
+                        'message': 'You registered successfully. Please log in.'
+                    }
+                    # return a response notifying the user that they registered successfully
+                    return make_response(jsonify(response)), 201
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
+                    response = {
+                        'status': 'fail',
+                        'message': 'Something went wrong. Please try again: ' + str(e)
+                    }
+                    return make_response(jsonify(response)), 500
+            else:
+                # There is an existing user. We don't want to register users twice
+                # Return a message to the user telling them that they they already exist
                 response = {
-                    'message': 'You registered successfully. Please log in.'
+                    'status': 'fail',
+                    'message': 'User already exists. Please login.'
                 }
-                # return a response notifying the user that they registered successfully
-                return make_response(jsonify(response)), 201
-            except Exception as e:
-                # An error occured, therefore return a string message containing the error
-                response = {
-                    'message': str(e)
-                }
-                return make_response(jsonify(response)), 401
+
+                return make_response(jsonify(response)), 409
         else:
-            # There is an existing user. We don't want to register users twice
-            # Return a message to the user telling them that they they already exist
-            response = {
-                'message': 'User already exists. Please login.'
-            }
-
-            return make_response(jsonify(response)), 202
+            return validate_required(request.data, 'username', 'password', 'email'), 400
 
 
 class LoginAPI(MethodView):
-    """This class-based view handles user login and access token generation."""
+    """This class handles user login and access token generation."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/login"""
-        try:
+        """Handle POST request for this view. Url ---> /v1/auth/login"""
+
+        if validate_required(request.data, 'username', 'password')['status'] == 'success':
             # Get the user object using their email (unique to every user)
             user = User.query.filter_by(
-                username=request.data['username']).first()
+                username=request.data['username'].lower()).first()
 
             # Try to authenticate the found user using their password
             if user and user.validate_password(request.data['password']):
-                # Generate the access token. This will be used as the authorization header
-                access_token = user.generate_auth_token(user.id)
+                    # Generate the access token. This will be used as the authorization header
+                access_token = user.generate_auth_token(user.id, 86400)
                 if access_token:
                     response = {
+                        'status': 'success',
                         'message': 'You logged in successfully.',
                         'access_token': access_token.decode()
                     }
@@ -69,31 +80,20 @@ class LoginAPI(MethodView):
             else:
                 # User does not exist. Therefore, we return an error message
                 response = {
+                    'status': 'fail',
                     'message': 'Invalid username or password, Please try again'
                 }
                 return make_response(jsonify(response)), 401
 
-        except Exception as e:
-            # Create a response containing an string error message
-            response = {
-                'message': str(e)
-            }
-            # Return a server error using the HTTP Error Code 500 (Internal Server Error)
-            return make_response(jsonify(response)), 500
+        else:
+            return validate_required(request.data, 'username', 'password'), 400
 
 
 class LogoutAPI(MethodView):
-    """
-    Logout Resource
-    """
+    """This class handles user logout"""
 
     def post(self):
-        # get auth token
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            auth_token = auth_header.split(" ")[1]
-        else:
-            auth_token = ''
+        auth_token = validate_token(request)
         if auth_token:
             resp = User.decode_auth_token(auth_token)
             if not isinstance(resp, str):
@@ -109,472 +109,833 @@ class LogoutAPI(MethodView):
                     }
                     return make_response(jsonify(responseObject)), 200
                 except Exception as e:
-                    responseObject = {
+                    # An error occured, therefore return a string message containing the error
+                    response = {
                         'status': 'fail',
-                        'message': e
+                        'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(responseObject)), 200
+                    return make_response(jsonify(response)), 500
             else:
                 responseObject = {
                     'status': 'fail',
-                    'message': resp
+                    'message': 'Provide a valid authentication token.'
                 }
                 return make_response(jsonify(responseObject)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ResetPasswordAPI(MethodView):
-    """This class registers a new user."""
+    """This class resets a user password."""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /auth/reset-password"""
+        """Handle POST request for this view. Url ---> /v1/auth/reset-password"""
 
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            auth_token = auth_header.split(" ")[1]
-        else:
-            auth_token = ''
+        auth_token = validate_token(request)
         if auth_token:
-            user_id = User.decode_auth_token(auth_token)
-            if not isinstance(user_id, str):
-                user = User.query.filter_by(id=user_id).first()
-                if user and user.validate_password(request.data['old_password']):
-                    user.password = Bcrypt().generate_password_hash(
-                        request.data['new_password']).decode()
-                    user.save()
+            if validate_required(request.data, 'old_password', 'new_password')['status'] == 'success':
+                try:
+                    user_id = User.decode_auth_token(auth_token)
+                    if not isinstance(user_id, str):
+                        user = User.query.filter_by(id=user_id).first()
+                        if user and user.validate_password(request.data['old_password']):
+                            user.password = Bcrypt().generate_password_hash(
+                                request.data['new_password']).decode()
+                            user.modified_on = datetime.now()
+                            user.save()
 
-                    response = {
-                        'status': 'success',
-                        'message': 'You have successfully changed your password.'
-                    }
-                    return make_response(jsonify(response)), 201
-                else:
+                            response = {
+                                'status': 'success',
+                                'message': 'You have successfully changed your password.'
+                            }
+                            return make_response(jsonify(response)), 201
+                        else:
+                            response = {
+                                'status': 'fail',
+                                'message': 'Invalid old password.'
+                            }
+                            return make_response(jsonify(response)), 401
+                    else:
+                        responseObject = {
+                            'status': 'fail',
+                            'message': 'Provide a valid authentication token.'
+                        }
+                        return make_response(jsonify(responseObject)), 401
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
-                responseObject = {
-                    'status': 'fail',
-                    'message': user_id
-                }
-                return make_response(jsonify(responseObject)), 401
+                return validate_required(request.data, 'old_password', 'new_password'), 400
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ShoppingListAPI(MethodView):
-    """This class registers a new user."""
+    """This class handles multiple shopping lists"""
 
     def post(self):
-        """Handle POST request for this view. Url ---> /shoppinglists/"""
+        """Handle POST request for this view. Url ---> /v1/shoppinglists/"""
 
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            access_token = auth_header.split(" ")[1]
-        else:
-            access_token = ''
-        if access_token:
-            user_id = User.decode_auth_token(access_token)
-            if not isinstance(user_id, str):
-                user = User.query.filter_by(id=user_id).first()
-                if user:
-                    title = str(request.data['title'])
-                    if title:
-                        shopping_list = ShoppingList(
-                            title=title, user_id=user_id)
-                        shopping_list.save()
-                        response = jsonify({
-                            'id': shopping_list.id,
-                            'title': shopping_list.title,
-                            'user_id': user_id
-                        })
+        auth_token = validate_token(request)
+        if auth_token:
+            if validate_required(request.data, 'title')['status'] == 'success':
+                try:
+                    user_id = User.decode_auth_token(auth_token)
+                    if not isinstance(user_id, str):
+                        user = User.query.filter_by(id=user_id).first()
+                        if user:
+                            shoppinglist = ShoppingList.query.filter_by(
+                                title=request.data['title'], user_id=user_id).first()
+                            if shoppinglist:
+                                response = {
+                                    'status': 'fail',
+                                    'message': 'Shopping List already exists'
+                                }
+                                return make_response(jsonify(response)), 409
+                            title = str(request.data['title'])
+                            if title:
+                                shopping_list = ShoppingList(
+                                    title=title, user_id=user_id)
+                                shopping_list.save()
 
-                        return make_response(response), 201
+                                response = {
+                                    'status': 'success',
+                                    'message': 'Shopping list created',
+                                    'shoppingList': {
+                                        'id': shopping_list.id,
+                                        'title': shopping_list.title,
+                                        'user_id': user_id,
+                                        'created_on': shopping_list.created_on,
+                                        'modified_on': shopping_list.modified_on
+                                    }
+                                }
+                                return make_response(jsonify(response)), 201
 
-                else:
+                        else:
+                            response = {
+                                'status': 'fail',
+                                'message': 'User not found'
+                            }
+                            return make_response(jsonify(response)), 404
+                    else:
+                        responseObject = {
+                            'status': 'fail',
+                            'message': 'Provide a valid authentication token.'
+                        }
+                        return make_response(jsonify(responseObject)), 401
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'Something went wrong. Please try again: ' + str(e)
                     }
-                    return make_response(jsonify(response)), 401
+                    return make_response(jsonify(response)), 500
             else:
-                responseObject = {
-                    'status': 'fail',
-                    'message': user_id
-                }
-                return make_response(jsonify(responseObject)), 401
+                return validate_required(request.data, 'title'), 400
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
-    def get(self):
-        """Handle GET request for this view. Url ---> /shoppinglists/"""
+    def get(self, limit, page):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/"""
 
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            access_token = auth_header.split(" ")[1]
-        else:
-            access_token = ''
-        if access_token:
-            user_id = User.decode_auth_token(access_token)
-            if not isinstance(user_id, str):
-                user = User.query.filter_by(id=user_id).first()
-                if user:
-                    shopping_lists = ShoppingList.query.filter_by(
-                        user_id=user_id)
-                    results = []
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    user = User.query.filter_by(id=user_id).first()
+                    if user:
+                        shopping_lists = ShoppingList.query.filter_by(
+                            user_id=user_id)
+                        total = len(shopping_lists.all())
+                        shopping_lists = shopping_lists.paginate(page, limit, error_out=False).items
 
-                    for shopping_list in shopping_lists:
-                        obj = {
-                            'id': shopping_list.id,
-                            'title': shopping_list.title,
-                            'user_id': shopping_list.user_id
+                        if not shopping_lists:
+                            return make_response(), 204
+                        results = []
+                        for shopping_list in shopping_lists:
+                            results.append(
+                                {
+                                    'id': shopping_list.id,
+                                    'title': shopping_list.title,
+                                    'user_id': shopping_list.user_id,
+                                    'created_on': shopping_list.created_on,
+                                    'modified_on': shopping_list.modified_on
+                                }
+                            )
+                        response = {
+                            'status': 'success',
+                            'message': 'Shopping lists found',
+                            'total': total,
+                            'shoppingLists': results
                         }
-                        results.append(obj)
-
-                    return make_response(jsonify(results)), 200
+                        return make_response(jsonify(response)), 200
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'User not found'
+                        }
+                        return make_response(jsonify(response)), 404
                 else:
-                    response = {
+                    responseObject = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'Provide a valid authentication token.'
                     }
-                    return make_response(jsonify(response)), 401
-            else:
-                responseObject = {
+                    return make_response(jsonify(responseObject)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(responseObject)), 401
+                return make_response(jsonify(response)), 401
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
 
 class ShoppingListIdAPI(MethodView):
+    """This class handles a single shopping list"""
+
     def get(self, id):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>"""
 
-        if access_token:
-            # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
-
-            if not isinstance(user_id, str):
-                # If the id is not a string(error), we have a user id
-                # Get the bucketlist with the id specified from the URL (<int:id>)
-                shoppinglist = ShoppingList.query.filter_by(id=id).first()
-                if not shoppinglist:
-                    # There is no bucketlist with this ID for this User, so
-                    # Raise an HTTPException with a 404 not found status code
-                    abort(404)
-                response = {
-                    'id': shoppinglist.id,
-                    'title': shoppinglist.title,
-                    'user_id': shoppinglist.user_id
-                }
-                return make_response(jsonify(response)), 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
-                response = {
-                    'message': message
-                }
-                # return an error response, telling the user he is Unauthorized
-                return make_response(jsonify(response)), 401
-
-    def put(self, id):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
-
-        if access_token:
-            # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
-
-            if not isinstance(user_id, str):
-                # If the id is not a string(error), we have a user id
-                # Get the bucketlist with the id specified from the URL (<int:id>)
-                shoppinglist = ShoppingList.query.filter_by(id=id).first()
-                if not shoppinglist:
-                    # There is no bucketlist with this ID for this User, so
-                    # Raise an HTTPException with a 404 not found status code
-                    abort(404)
-                new_title = str(request.data['new_title'])
-
-                shoppinglist.title = new_title
-                shoppinglist.save()
-                response = {
-                    'id': shoppinglist.id,
-                    'title': shoppinglist.title,
-                    'user_id': shoppinglist.user_id
-                }
-                return make_response(jsonify(response)), 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
-                response = {
-                    'message': message
-                }
-                # return an error response, telling the user he is Unauthorized
-                return make_response(jsonify(response)), 401
-
-    def delete(self, id):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
-
-        if access_token:
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
                 # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
-
-            if not isinstance(user_id, str):
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
                     # If the id is not a string(error), we have a user id
                     # Get the bucketlist with the id specified from the URL (<int:id>)
-                shoppinglist = ShoppingList.query.filter_by(id=id).first()
-                if not shoppinglist:
-                    # There is no bucketlist with this ID for this User, so
-                    # Raise an HTTPException with a 404 not found status code
-                    abort(404)
-
-                shoppinglist.delete()
-                return {
-                    "message": "Shopping list {} deleted".format(shoppinglist.id)
-                }, 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
-                response = {
-                    'message': message
-                }
-                # return an error response, telling the user he is Unauthorized
-                return make_response(jsonify(response)), 401
-
-class ShoppingListIdItemsAPI(MethodView):
-    """This class registers a new user."""
-
-    def post(self, id):
-        """Handle POST request for this view. Url ---> /shoppinglists/<id>/items/"""
-
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            access_token = auth_header.split(" ")[1]
-        else:
-            access_token = ''
-        if access_token:
-            user_id = User.decode_auth_token(access_token)
-            if not isinstance(user_id, str):
-                user = User.query.filter_by(id=user_id).first()
-                if user:
                     shoppinglist = ShoppingList.query.filter_by(id=id).first()
                     if not shoppinglist:
                         # There is no bucketlist with this ID for this User, so
                         # Raise an HTTPException with a 404 not found status code
-                        abort(404)
-
-                    name = str(request.data['name'])
-                    price = str(request.data['price'])
-                    status = str(request.data['status'])
-                    if name:
-                        if price:
-                            price = int(price)
-                        status_bool = False
-                        if status:
-                            if status.lower == 'true':
-                                status_bool = True
-                            
-                        item = Item(name=name, price=price, status=status_bool, shopping_list_id=id)
-                        item.save()
-                        response = jsonify({
-                            'id': item.id,
-                            'name': item.name,
-                            'status': item.status,
-                            'shopping_list_id': item.shopping_list_id
-                        })
-
-                        return make_response(response), 201
-
-                    return {
-                        "message": "Shopping list Item {} created".format(item.name)
-                    }, 200
+                        responseObject = {
+                            'status': 'fail',
+                            'message': 'Shopping List not found.'
+                        }
+                        return make_response(jsonify(responseObject)), 404
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping List found.',
+                        'shoppingList': {
+                            'id': shoppinglist.id,
+                            'title': shoppinglist.title,
+                            'user_id': shoppinglist.user_id,
+                            'created_on': shoppinglist.created_on,
+                            'modified_on': shoppinglist.modified_on
+                        }
+                    }
+                    return make_response(jsonify(response)), 200
                 else:
                     response = {
                         'status': 'fail',
-                        'message': 'Invalid old password.'
+                        'message': 'Provide a valid authentication token.'
                     }
                     return make_response(jsonify(response)), 401
-            else:
-                responseObject = {
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
                     'status': 'fail',
-                    'message': user_id
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                return make_response(jsonify(responseObject)), 401
+                return make_response(jsonify(response)), 500
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'Provide a valid auth token.'
+                'message': 'Provide an authentication token.'
             }
             return make_response(jsonify(responseObject)), 403
 
-class ShoppingListIdItemsIdAPI(MethodView):
-    def put(self, id, item_id):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
+    def put(self, id):
+        """Handle PUT request for this view. Url ---> /v1/shoppinglists/<id>"""
 
-        if access_token:
-            # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
+        auth_token = validate_token(request)
+        if auth_token:
+            if validate_required(request.data, 'new_title')['status'] == 'success':
+                try:
+                    # Get the user id related to this access token
+                    user_id = User.decode_auth_token(auth_token)
+                    if not isinstance(user_id, str):
+                        # If the id is not a string(error), we have a user id
+                        # Get the bucketlist with the id specified from the URL (<int:id>)
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
+                        if not shoppinglist:
+                            # There is no bucketlist with this ID for this User, so
+                            # Raise an HTTPException with a 404 not found status code
+                            responseObject = {
+                                'status': 'fail',
+                                'message': 'Shopping List not found.'
+                            }
+                            return make_response(jsonify(responseObject)), 404
+                        new_title = str(request.data['new_title'])
 
-            if not isinstance(user_id, str):
-                shoppinglist = ShoppingList.query.filter_by(id=id).first()
-                item = Item.query.filter_by(id=item_id).first()
-                if not shoppinglist or not item:
-                    abort(404)
-                new_name = str(request.data['new_name'])
-                new_price = str(request.data['new_price'])
-                new_status = str(request.data['new_status'])
-                if new_price:
-                    new_price = int(new_price)
-                status_bool = False
-                if new_status.lower == "true":
-                    status_bool = True
-                item.name = new_name
-                item.price = new_price
-                item.status = status_bool
-                item.save()
-                response = {
-                    'id': item.id,
-                    'name': item.name,
-                    'status': item.status,
-                    'shopping_list_id': item.shopping_list_id
-                }
-                return make_response(jsonify(response)), 200
+                        shoppinglist.title = new_title
+                        shoppinglist.modified_on = datetime.now()
+                        shoppinglist.save()
+                        response = {
+                            'status': 'success',
+                            'message': 'Shopping List edited.',
+                            'shoppingList': {
+                                'id': shoppinglist.id,
+                                'title': shoppinglist.title,
+                                'user_id': shoppinglist.user_id,
+                                'created_on': shoppinglist.created_on,
+                                'modified_on': shoppinglist.modified_on
+                            }
+                        }
+                        return make_response(jsonify(response)), 200
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Provide a valid authentication token.'
+                        }
+                        return make_response(jsonify(response)), 401
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
+                    response = {
+                        'status': 'fail',
+                        'message': 'Something went wrong. Please try again: ' + str(e)
+                    }
+                    return make_response(jsonify(response)), 500
             else:
-                # user is not legit, so the payload is an error message
-                message = user_id
+                return validate_required(request.data, 'new_title'), 400
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+    def delete(self, id):
+        """Handle DELETE request for this view. Url ---> /v1/shoppinglists/<id>"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                # Get the user id related to this access token
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                        # If the id is not a string(error), we have a user id
+                        # Get the bucketlist with the id specified from the URL (<int:id>)
+                    shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                    if not shoppinglist:
+                        # There is no bucketlist with this ID for this User, so
+                        # Raise an HTTPException with a 404 not found status code
+                        responseObject = {
+                            'status': 'fail',
+                            'message': 'Shopping List not found.'
+                        }
+                        return make_response(jsonify(responseObject)), 404
+                    shoppinglist.delete()
+                    response = {
+                        "status": "success",
+                        "message": "Shopping list '{}' deleted".format(shoppinglist.title)
+                    }
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                # return an error response, telling the user he is Unauthorized
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+
+class ShoppingListIdItemsAPI(MethodView):
+    """This class handles multiple shopping list items."""
+
+    def post(self, id):
+        """Handle POST request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            if validate_required(request.data, 'name', 'price', 'status')['status'] == 'success':
+                try:
+                    user_id = User.decode_auth_token(auth_token)
+                    if not isinstance(user_id, str):
+                        user = User.query.filter_by(id=user_id).first()
+                        if user:
+                            shoppinglist = ShoppingList.query.filter_by(
+                                id=id).first()
+                            if not shoppinglist:
+                                response = {
+                                    'status': 'fail',
+                                    'message': 'Shopping List not found'
+                                }
+                                return make_response(jsonify(response)), 404
+
+                            name = str(request.data['name'])
+                            price = str(request.data['price'])
+                            status = str(request.data['status'])
+                            shoppinglistitem = Item.query.filter_by(
+                                name=name, shopping_list_id=id).first()
+                            if shoppinglistitem:
+                                response = {
+                                    'status': 'fail',
+                                    'message': 'Shopping List Item exists'
+                                }
+                                return make_response(jsonify(response)), 409
+                            if price:
+                                price = int(price)
+                            status_bool = False
+                            if status:
+                                if status.lower == 'true':
+                                    status_bool = True
+
+                            item = Item(
+                                name=name, price=price, status=status_bool, shopping_list_id=id, user_id=user_id)
+                            item.save()
+                            response = {
+                                'status': 'success',
+                                'message': 'Shopping List Item created.',
+                                'shoppingListItem': {
+                                    'id': item.id,
+                                    'name': item.name,
+                                    'price': item.price,
+                                    'status': item.status,
+                                    'created_on': item.created_on,
+                                    'modified_on': item.modified_on,
+                                    'shopping_list_id': item.shopping_list_id
+                                }
+                            }
+                            return make_response(jsonify(response)), 201
+                        else:
+                            response = {
+                                'status': 'fail',
+                                'message': 'User not found'
+                            }
+                            return make_response(jsonify(response)), 404
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Provide a valid authentication token.'
+                        }
+                        return make_response(jsonify(response)), 401
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
+                    response = {
+                        'status': 'fail',
+                        'message': 'Something went wrong. Please try again: ' + str(e)
+                    }
+                    return make_response(jsonify(response)), 500
+            else:
+                return validate_required(request.data, 'name', 'price', 'status'), 400
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+    def get(self, id, limit=0, page=0):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    user = User.query.filter_by(id=user_id).first()
+                    if user:
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
+                        if not shoppinglist:
+                            response = {
+                                'status': 'fail',
+                                'message': 'Shopping List not found'
+                            }
+                            return make_response(jsonify(response)), 404
+
+                        shoppinglistitems = Item.query.filter_by(
+                            shopping_list_id=id)
+                        total = len(shoppinglistitems.all())
+                        shoppinglistitems = shoppinglistitems.paginate(page, limit, error_out=False).items
+
+                        if shoppinglistitems:
+                            items = []
+                            for item in shoppinglistitems:
+                                items.append(
+                                    {
+                                        'id': item.id,
+                                        'name': item.name,
+                                        'price': item.price,
+                                        'status': item.status,
+                                        'created_on': item.created_on,
+                                        'modified_on': item.modified_on,
+                                        'shopping_list_id': item.shopping_list_id
+                                    }
+                                )
+                            response = {
+                                'status': 'success',
+                                'message': 'Shopping List Items found.',
+                                'total': total,
+                                'shoppingListItems': items
+                            }
+                            return make_response(jsonify(response)), 200
+                        else:
+                            return make_response(), 204
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'User not found'
+                        }
+                        return make_response(jsonify(response)), 404
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
+                }
+                return make_response(jsonify(response)), 500
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+
+class ShoppingListIdItemsIdAPI(MethodView):
+    """This class handles a single shopping list item"""
+
+    def get(self, id, item_id):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                    if not shoppinglist:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List not found'
+                        }
+                        return make_response(jsonify(response)), 404
+                    item = Item.query.filter_by(id=item_id).first()
+                    if not item:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List Item not found'
+                        }
+                        return make_response(jsonify(response)), 404
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping List Item found.',
+                        'shoppingListItem': {
+                            'id': item.id,
+                            'name': item.name,
+                            'price': item.price,
+                            'status': item.status,
+                            'created_on': item.created_on,
+                            'modified_on': item.modified_on,
+                            'shopping_list_id': item.shopping_list_id
+                        }
+                    }
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
+                response = {
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
+                }
+                return make_response(jsonify(response)), 500
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
+    def put(self, id, item_id):
+        """Handle PUT request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
+
+        auth_token = validate_token(request)
+        if auth_token:
+            if validate_required(request.data, 'new_name', 'new_price', 'new_status')['status'] == 'success':
+                try:
+                    # Get the user id related to this access token
+                    user_id = User.decode_auth_token(auth_token)
+                    if not isinstance(user_id, str):
+                        shoppinglist = ShoppingList.query.filter_by(
+                            id=id).first()
+                        item = Item.query.filter_by(id=item_id).first()
+                        if not shoppinglist or not item:
+                            response = {
+                                'status': 'fail',
+                                'message': 'Shopping List not found'
+                            }
+                            return make_response(jsonify(response)), 404
+                        new_name = str(request.data['new_name'])
+                        new_price = str(request.data['new_price'])
+                        new_status = str(request.data['new_status'])
+
+                        item.name = new_name
+                        item.price = new_price
+                        item.status = new_status
+                        item.modified_on = datetime.now()
+                        item.save()
+                        response = {
+                            'status': 'success',
+                            'message': 'Shopping List Item edited.',
+                            'shoppingListItem': {
+                                'id': item.id,
+                                'name': item.name,
+                                'price': item.price,
+                                'status': item.status,
+                                'created_on': item.created_on,
+                                'modified_on': item.modified_on,
+                                'shopping_list_id': item.shopping_list_id
+                            }
+                        }
+                        return make_response(jsonify(response)), 200
+                    else:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Provide a valid authentication token.'
+                        }
+                        return make_response(jsonify(response)), 401
+                except Exception as e:
+                    # An error occured, therefore return a string message containing the error
+                    response = {
+                        'status': 'fail',
+                        'message': 'Something went wrong. Please try again: ' + str(e)
+                    }
+                    return make_response(jsonify(response)), 500
+            else:
+                return validate_required(request.data, 'new_name', 'new_price', 'new_status'), 400
+
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
     def delete(self, id, item_id):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
+        """Handle DELETE request for this view. Url ---> /v1/shoppinglists/<id>/items/<item_id>"""
 
-        if access_token:
-            user_id = User.decode_auth_token(access_token)
-
-            if not isinstance(user_id, str):
-                shoppinglist = ShoppingList.query.filter_by(id=id).first()
-                if not shoppinglist:
-                    abort(404)
-                item = Item.query.filter_by(id=item_id).first()
-                if not item:
-                    abort(404)
-                item.delete()
-                return {
-                    "message": "Shopping list Item {} deleted".format(item.id)
-                }, 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    shoppinglist = ShoppingList.query.filter_by(id=id).first()
+                    if not shoppinglist:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List not found'
+                        }
+                        return make_response(jsonify(response)), 404
+                    item = Item.query.filter_by(id=item_id).first()
+                    if not item:
+                        response = {
+                            'status': 'fail',
+                            'message': 'Shopping List Item not found'
+                        }
+                        return make_response(jsonify(response)), 404
+                    item.delete()
+                    response = {
+                        "status": "success",
+                        "message": "Shopping list Item '{}' deleted".format(item.name)
+                    }
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
+
 
 class ShoppingListSearchAPI(MethodView):
-    def get(self, q, limit):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
+    """This class handles the shopping list search functionality"""
 
-        if access_token:
-            # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
+    def get(self, q, limit=0, page=0):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/shoppinglist/<q>/<limit>/<page>"""
 
-            if not isinstance(user_id, str):
-                # q = str(request.data['query'])
-                shoppinglists = ShoppingList.query
-                if q:
-                    shoppinglists = shoppinglists.filter(ShoppingList.title.like('%' + q + '%'))
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                # Get the user id related to this access token
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    # q = str(request.data['query'])
+                    shoppinglists = ShoppingList.query.filter_by(
+                        user_id=user_id)
+                    if q:
+                        shoppinglists = shoppinglists.filter(
+                            ShoppingList.title.ilike(q + '%')
+                        )
 
-                shoppinglists = shoppinglists.order_by(ShoppingList.title).limit(limit).all()
-                the_lists = []
-                for a_list in shoppinglists:
-                    the_list = {
-                        'id': a_list.id,
-                        'title': a_list.title,
-                        'user_id': a_list.user_id
+                    total = len(shoppinglists.all())
+                    shoppinglists = shoppinglists.order_by(
+                        ShoppingList.title).paginate(page, limit, error_out=False).items
+
+                    if not shoppinglists:
+                        return make_response(), 204
+                    the_lists = []
+                    for a_list in shoppinglists:
+                        the_lists.append(
+                            {
+                                'id': a_list.id,
+                                'title': a_list.title,
+                                'user_id': a_list.user_id,
+                                'created_on': a_list.created_on,
+                                'modified_on': a_list.modified_on
+                            }
+                        )
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping Lists found.',
+                        'total': total,
+                        'shoppingLists': the_lists
                     }
-                    the_lists.append(the_list)
-                return make_response(jsonify(the_lists)), 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                # return an error response, telling the user he is Unauthorized
-                return make_response(jsonify(response)), 401
+                return make_response(jsonify(response)), 500
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 
 class ItemSearchAPI(MethodView):
-    def get(self, q, limit):
-        # get the access token from the authorization header
-        auth_header = request.headers.get('Authorization')
-        access_token = auth_header.split(" ")[1]
+    """This class handles the shopping list item search functionality"""
 
-        if access_token:
-            # Get the user id related to this access token
-            user_id = User.decode_auth_token(access_token)
+    def get(self, q, limit=0, page=0):
+        """Handle GET request for this view. Url ---> /v1/shoppinglists/search/item/<q>/<limit>/<page>"""
 
-            if not isinstance(user_id, str):
-                items = Item.query
-                if q:
-                    items = items.filter(ShoppingList.title.like('%' + q + '%'))
+        auth_token = validate_token(request)
+        if auth_token:
+            try:
+                # Get the user id related to this access token
+                user_id = User.decode_auth_token(auth_token)
+                if not isinstance(user_id, str):
+                    items = None
+                    total = 0
+                    if q:
+                        items = Item.query.filter_by(user_id=user_id)
+                        items = items.filter(Item.name.ilike(q + '%'))
+                        total = len(items.all())
+                        items = items.order_by(Item.name).paginate(
+                            page, limit, error_out=False).items
 
-                items = items.order_by(ShoppingList.title).limit(limit).all()
-                the_items = []
-                for an_item in items:
-                    the_item = {
-                        'id': an_item.id,
-                        'name': an_item.name,
-                        'price': an_item.price,
-                        'status': an_item.status,
-                        'shopping_list_id': an_item.shopping_list_id
+                    if not items:
+                        return make_response(), 204
+                    the_items = []
+                    for an_item in items:
+                        the_items.append(
+                            {
+                                'id': an_item.id,
+                                'name': an_item.name,
+                                'price': an_item.price,
+                                'status': an_item.status,
+                                'created_on': an_item.created_on,
+                                'modified_on': an_item.modified_on,
+                                'shopping_list_id': an_item.shopping_list_id
+                            }
+                        )
+                    response = {
+                        'status': 'success',
+                        'message': 'Shopping List Items found.',
+                        'total': total,
+                        'shoppingListItems': the_items
                     }
-                    the_items.append(the_item)
-                return make_response(jsonify(the_items)), 200
-            else:
-                # user is not legit, so the payload is an error message
-                message = user_id
+                    return make_response(jsonify(response)), 200
+                else:
+                    response = {
+                        'status': 'fail',
+                        'message': 'Provide a valid authentication token.'
+                    }
+                    return make_response(jsonify(response)), 401
+            except Exception as e:
+                # An error occured, therefore return a string message containing the error
                 response = {
-                    'message': message
+                    'status': 'fail',
+                    'message': 'Something went wrong. Please try again: ' + str(e)
                 }
-                # return an error response, telling the user he is Unauthorized
                 return make_response(jsonify(response)), 401
+        else:
+            responseObject = {
+                'status': 'fail',
+                'message': 'Provide an authentication token.'
+            }
+            return make_response(jsonify(responseObject)), 403
 
 
 register_api = RegisterAPI.as_view('register_api')
@@ -583,59 +944,72 @@ logout_api = LogoutAPI.as_view('logout_api')
 reset_password_api = ResetPasswordAPI.as_view('reset_password_api')
 shopping_lists_api = ShoppingListAPI.as_view('shopping_lists_api')
 shopping_lists_id_api = ShoppingListIdAPI.as_view('shopping_lists_id_api')
-shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view('shopping_lists_id_items_api')
-shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view('shopping_lists_id_items_id_api')
-shopping_lists_search_api = ShoppingListSearchAPI.as_view('shopping_lists_search_api')
+shopping_lists_id_items_api = ShoppingListIdItemsAPI.as_view(
+    'shopping_lists_id_items_api')
+shopping_lists_id_items_id_api = ShoppingListIdItemsIdAPI.as_view(
+    'shopping_lists_id_items_id_api')
+shopping_lists_search_api = ShoppingListSearchAPI.as_view(
+    'shopping_lists_search_api')
 items_search_api = ItemSearchAPI.as_view('items_search_api')
 
 
 auth_blueprint.add_url_rule(
-    '/auth/register',
+    '/v1/auth/register',
     view_func=register_api,
     methods=['POST'])
 
 auth_blueprint.add_url_rule(
-    '/auth/login',
+    '/v1/auth/login',
     view_func=login_api,
     methods=['POST']
 )
 auth_blueprint.add_url_rule(
-    '/auth/logout',
+    '/v1/auth/logout',
     view_func=logout_api,
     methods=['POST']
 )
 auth_blueprint.add_url_rule(
-    '/auth/reset-password',
+    '/v1/auth/reset-password',
     view_func=reset_password_api,
     methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/',
+    '/v1/shoppinglists/<int:limit>/<int:page>',
     view_func=shopping_lists_api,
-    methods=['POST', 'GET']
+    methods=['GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>',
+    '/v1/shoppinglists/',
+    view_func=shopping_lists_api,
+    methods=['POST']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/<int:id>',
     view_func=shopping_lists_id_api,
     methods=['DELETE', 'GET', 'PUT']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>/items/',
+    '/v1/shoppinglists/<int:id>/items/<int:limit>/<int:page>',
+    view_func=shopping_lists_id_items_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/<int:id>/items/',
     view_func=shopping_lists_id_items_api,
     methods=['POST']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/<int:id>/items/<int:item_id>',
+    '/v1/shoppinglists/<int:id>/items/<int:item_id>',
     view_func=shopping_lists_id_items_id_api,
-    methods=['PUT', 'DELETE']
+    methods=['PUT', 'DELETE', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/search/shoppinglist/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/shoppinglist/<string:q>/<int:limit>/<int:page>',
     view_func=shopping_lists_search_api,
     methods=['GET']
 )
 shoppinglists_blueprint.add_url_rule(
-    '/shoppinglists/search/item/<string:q>/<int:limit>',
+    '/v1/shoppinglists/search/item/<string:q>/<int:limit>/<int:page>',
     view_func=items_search_api,
     methods=['GET']
 )

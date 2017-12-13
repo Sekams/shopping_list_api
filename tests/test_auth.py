@@ -31,7 +31,7 @@ class AuthTestCase(unittest.TestCase):
 
     def test_registration(self):
         """Test user registration works correcty."""
-        res = self.client().post('/auth/register', data=self.new_user_data)
+        res = self.client().post('/v1/auth/register', data=self.new_user_data)
         # get the results returned in json format
         result = json.loads(res.data.decode())
         # assert that the request contains a success message and a 201 status code
@@ -39,12 +39,20 @@ class AuthTestCase(unittest.TestCase):
                          "You registered successfully. Please log in.")
         self.assertEqual(res.status_code, 201)
 
+    def test_registration_invalid_data(self):
+        """Test user registration with invalid data."""
+        res = self.client().post('/v1/auth/register', data=self.user_data)
+        result = json.loads(res.data.decode())
+        self.assertEqual(result['message'],
+                         "Please provide the required parameter value for email")
+        self.assertEqual(res.status_code, 400)
+
     def test_already_registered_user(self):
         """Test that a user cannot be registered twice."""
-        res = self.client().post('/auth/register', data=self.new_user_data)
+        res = self.client().post('/v1/auth/register', data=self.new_user_data)
         self.assertEqual(res.status_code, 201)
-        second_res = self.client().post('/auth/register', data=self.new_user_data)
-        self.assertEqual(second_res.status_code, 202)
+        second_res = self.client().post('/v1/auth/register', data=self.new_user_data)
+        self.assertEqual(second_res.status_code, 409)
         # get the results returned in json format
         result = json.loads(second_res.data.decode())
         self.assertEqual(
@@ -52,9 +60,9 @@ class AuthTestCase(unittest.TestCase):
 
     def test_user_login(self):
         """Test registered user can login."""
-        res = self.client().post('/auth/register', data=self.new_user_data)
+        res = self.client().post('/v1/auth/register', data=self.new_user_data)
         self.assertEqual(res.status_code, 201)
-        login_res = self.client().post('/auth/login', data=self.user_data)
+        login_res = self.client().post('/v1/auth/login', data=self.user_data)
 
         # get the results in json format
         result = json.loads(login_res.data.decode())
@@ -69,10 +77,10 @@ class AuthTestCase(unittest.TestCase):
         # define a dictionary to represent an unregistered user
         not_a_user = {
             'username': 'not_a_user',
-            'password': 'nope'
+            'password': 'nopesir'
         }
-        # send a POST request to /auth/login with the data above
-        res = self.client().post('/auth/login', data=not_a_user)
+        # send a POST request to /v1/auth/login with the data above
+        res = self.client().post('/v1/auth/login', data=not_a_user)
         # get the result in json
         result = json.loads(res.data.decode())
 
@@ -81,3 +89,13 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 401)
         self.assertEqual(
             result['message'], "Invalid username or password, Please try again")
+
+    def test_invalid_password_user_login(self):
+        """Test invalid password user can login."""
+        res = self.client().post('/v1/auth/register', data=self.new_user_data)
+        self.assertEqual(res.status_code, 201)
+        self.user_data['password'] = '123456'
+        login_res = self.client().post('/v1/auth/login', data=self.user_data)
+        result = json.loads(login_res.data.decode())
+        self.assertEqual(result['message'], "Invalid username or password, Please try again")
+        self.assertEqual(login_res.status_code, 401)

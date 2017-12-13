@@ -49,6 +49,10 @@ class TestProductionConfig(TestCase):
         """Test app has Production configuration"""
         self.assertTrue(app.config['DEBUG'] is False)
 
+    def test_database_url_from_env(self):
+        """Test app gets database url from environment variables"""
+        self.assertEqual(app.config['SQLALCHEMY_DATABASE_URI'], 'postgresql://postgres:@localhost/shopping_list_api')
+
 
 if __name__ == '__main__':
     unittest.main()
