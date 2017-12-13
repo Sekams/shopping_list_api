@@ -262,14 +262,12 @@ class ShoppingListAPI(MethodView):
                     user = User.query.filter_by(id=user_id).first()
                     if user:
                         shopping_lists = ShoppingList.query.filter_by(
-                            user_id=user_id).paginate(page, limit, error_out=False).items
+                            user_id=user_id)
+                        total = len(shopping_lists.all())
+                        shopping_lists = shopping_lists.paginate(page, limit, error_out=False).items
 
                         if not shopping_lists:
-                            response = {
-                                'status': 'fail',
-                                'message': 'No shopping lists found'
-                            }
-                            return make_response(jsonify(response)), 404
+                            return make_response(), 204
                         results = []
                         for shopping_list in shopping_lists:
                             results.append(
@@ -284,6 +282,7 @@ class ShoppingListAPI(MethodView):
                         response = {
                             'status': 'success',
                             'message': 'Shopping lists found',
+                            'total': total,
                             'shoppingLists': results
                         }
                         return make_response(jsonify(response)), 200
@@ -563,7 +562,7 @@ class ShoppingListIdItemsAPI(MethodView):
             }
             return make_response(jsonify(responseObject)), 403
 
-    def get(self, id, limit, page):
+    def get(self, id, limit=0, page=0):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/<id>/items/"""
 
         auth_token = validate_token(request)
@@ -583,7 +582,10 @@ class ShoppingListIdItemsAPI(MethodView):
                             return make_response(jsonify(response)), 404
 
                         shoppinglistitems = Item.query.filter_by(
-                            shopping_list_id=id).paginate(page, limit, error_out=False).items
+                            shopping_list_id=id)
+                        total = len(shoppinglistitems.all())
+                        shoppinglistitems = shoppinglistitems.paginate(page, limit, error_out=False).items
+
                         if shoppinglistitems:
                             items = []
                             for item in shoppinglistitems:
@@ -601,15 +603,12 @@ class ShoppingListIdItemsAPI(MethodView):
                             response = {
                                 'status': 'success',
                                 'message': 'Shopping List Items found.',
+                                'total': total,
                                 'shoppingListItems': items
                             }
                             return make_response(jsonify(response)), 200
                         else:
-                            response = {
-                                'status': 'fail',
-                                'message': 'No Shopping List Items found'
-                            }
-                            return make_response(jsonify(response)), 404
+                            return make_response(), 204
                     else:
                         response = {
                             'status': 'fail',
@@ -813,7 +812,7 @@ class ShoppingListIdItemsIdAPI(MethodView):
 class ShoppingListSearchAPI(MethodView):
     """This class handles the shopping list search functionality"""
 
-    def get(self, q, limit, page):
+    def get(self, q, limit=0, page=0):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/search/shoppinglist/<q>/<limit>/<page>"""
 
         auth_token = validate_token(request)
@@ -827,18 +826,15 @@ class ShoppingListSearchAPI(MethodView):
                         user_id=user_id)
                     if q:
                         shoppinglists = shoppinglists.filter(
-                            ShoppingList.title.ilike(q.lower() + '%')
+                            ShoppingList.title.ilike(q + '%')
                         )
 
+                    total = len(shoppinglists.all())
                     shoppinglists = shoppinglists.order_by(
                         ShoppingList.title).paginate(page, limit, error_out=False).items
 
                     if not shoppinglists:
-                        response = {
-                            'status': 'fail',
-                            'message': 'Shopping Lists not found'
-                        }
-                        return make_response(jsonify(response)), 404
+                        return make_response(), 204
                     the_lists = []
                     for a_list in shoppinglists:
                         the_lists.append(
@@ -853,6 +849,7 @@ class ShoppingListSearchAPI(MethodView):
                     response = {
                         'status': 'success',
                         'message': 'Shopping Lists found.',
+                        'total': total,
                         'shoppingLists': the_lists
                     }
                     return make_response(jsonify(response)), 200
@@ -880,7 +877,7 @@ class ShoppingListSearchAPI(MethodView):
 class ItemSearchAPI(MethodView):
     """This class handles the shopping list item search functionality"""
 
-    def get(self, q, limit, page):
+    def get(self, q, limit=0, page=0):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/search/item/<q>/<limit>/<page>"""
 
         auth_token = validate_token(request)
@@ -890,18 +887,16 @@ class ItemSearchAPI(MethodView):
                 user_id = User.decode_auth_token(auth_token)
                 if not isinstance(user_id, str):
                     items = None
+                    total = 0
                     if q:
                         items = Item.query.filter_by(user_id=user_id)
                         items = items.filter(Item.name.ilike(q + '%'))
+                        total = len(items.all())
                         items = items.order_by(Item.name).paginate(
                             page, limit, error_out=False).items
 
                     if not items:
-                        response = {
-                            'status': 'fail',
-                            'message': 'Shopping List Items not found'
-                        }
-                        return make_response(jsonify(response)), 404
+                        return make_response(), 204
                     the_items = []
                     for an_item in items:
                         the_items.append(
@@ -918,6 +913,7 @@ class ItemSearchAPI(MethodView):
                     response = {
                         'status': 'success',
                         'message': 'Shopping List Items found.',
+                        'total': total,
                         'shoppingListItems': the_items
                     }
                     return make_response(jsonify(response)), 200

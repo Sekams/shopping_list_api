@@ -365,8 +365,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
         access_token=json.loads(rv_2.data.decode())['access_token']
         res=self.client().get('/v1/shoppinglists/1/1',
                         headers=dict(Authorization="Bearer " + access_token))
-        self.assertEqual(res.status_code, 404)
-        self.assertIn('No shopping lists found', str(res.data))
+        self.assertEqual(res.status_code, 204)
 
     def test_shopping_list_retrieval_invalid_user(self):
         """Test API can catch an invalid user in shopping list retrieval (POST request)"""
@@ -894,8 +893,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
         res_3=self.client().get('/v1/shoppinglists/1/items/1/1',
                                  headers=dict(
                                      Authorization="Bearer " + access_token))
-        self.assertEqual(res_3.status_code, 404)
-        self.assertIn('No Shopping List Items found', str(res_3.data))
+        self.assertEqual(res_3.status_code, 204)
 
     def test_shopping_list_item_batch_retrieval_no_user(self):
         """Test API can detect missing user when retrieving batch shopping list items (POST request)"""
@@ -1379,8 +1377,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertIn('From Supermarket', str(res.data))
         search_res=self.client().get('/v1/shoppinglists/search/shoppinglist/No list/1/1',
                                headers=dict(Authorization="Bearer " + access_token))
-        self.assertEqual(search_res.status_code, 404)
-        self.assertIn('Shopping Lists not found', str(search_res.data))
+        self.assertEqual(search_res.status_code, 204)
 
     def test_shopping_list_search_invalid_token(self):
         """Test API can detect an invalid token when searching for a shopping list (GET request)"""
@@ -1461,8 +1458,7 @@ class ShoppingListAPITestCase(unittest.TestCase):
         self.assertEqual(rv_4.status_code, 201)
         search_res=self.client().get('/v1/shoppinglists/search/item/Cake/1/1',
                                headers=dict(Authorization="Bearer " + access_token))
-        self.assertEqual(search_res.status_code, 404)
-        self.assertIn('Shopping List Items not found', str(search_res.data))
+        self.assertEqual(search_res.status_code, 204)
 
     def test_shopping_list_item_search_invalid_token(self):
         """Test API can detect an invalid token when searching for a shopping list item (GET request)"""
