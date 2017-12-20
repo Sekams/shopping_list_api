@@ -5,6 +5,7 @@ from server.config import app_config
 
 db = SQLAlchemy()
 
+
 def create_app(config_name):
     app = FlaskAPI(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
@@ -17,7 +18,7 @@ def create_app(config_name):
 
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET,HEAD,OPTIONS," \
-                                                        "POST,PUT,DELETE"
+            "POST,PUT,DELETE"
         response.headers["Access-Control-Allow-Headers"] = "Access-Control-Allow-"\
             "Headers, Origin,Accept, X-Requested-With, Content-Type, " \
             "Access-Control-Request-Method, Access-Control-Request-Headers," \
