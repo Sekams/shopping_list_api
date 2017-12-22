@@ -251,7 +251,7 @@ class ShoppingListAPI(MethodView):
             }
             return make_response(jsonify(responseObject)), 403
 
-    def get(self, limit, page):
+    def get(self, limit=0, page=0):
         """Handle GET request for this view. Url ---> /v1/shoppinglists/"""
 
         auth_token = validate_token(request)
@@ -264,7 +264,10 @@ class ShoppingListAPI(MethodView):
                         shopping_lists = ShoppingList.query.filter_by(
                             user_id=user_id)
                         total = len(shopping_lists.all())
-                        shopping_lists = shopping_lists.paginate(page, limit, error_out=False).items
+                        if limit and page:
+                            shopping_lists = shopping_lists.paginate(page, limit, error_out=False).items
+                        else:
+                            shopping_lists = shopping_lists.all()
 
                         if not shopping_lists:
                             return make_response(), 204
@@ -584,7 +587,10 @@ class ShoppingListIdItemsAPI(MethodView):
                         shoppinglistitems = Item.query.filter_by(
                             shopping_list_id=id)
                         total = len(shoppinglistitems.all())
-                        shoppinglistitems = shoppinglistitems.paginate(page, limit, error_out=False).items
+                        if limit and page:
+                            shoppinglistitems = shoppinglistitems.paginate(page, limit, error_out=False).items
+                        else:
+                            shoppinglistitems = shoppinglistitems.all()
 
                         if shoppinglistitems:
                             items = []
@@ -822,16 +828,21 @@ class ShoppingListSearchAPI(MethodView):
                 user_id = User.decode_auth_token(auth_token)
                 if not isinstance(user_id, str):
                     # q = str(request.data['query'])
-                    shoppinglists = ShoppingList.query.filter_by(
-                        user_id=user_id)
+                    shoppinglists = None
+                    total = 0
                     if q:
+                        shoppinglists = ShoppingList.query.filter_by(
+                            user_id=user_id)
                         shoppinglists = shoppinglists.filter(
                             ShoppingList.title.ilike(q + '%')
                         )
-
-                    total = len(shoppinglists.all())
-                    shoppinglists = shoppinglists.order_by(
-                        ShoppingList.title).paginate(page, limit, error_out=False).items
+                        total = len(shoppinglists.all())
+                        if limit and page:
+                            shoppinglists = shoppinglists.order_by(
+                                ShoppingList.title).paginate(page, limit, error_out=False).items
+                        else:
+                            shoppinglists = shoppinglists.order_by(
+                                ShoppingList.title).all()
 
                     if not shoppinglists:
                         return make_response(), 204
@@ -892,8 +903,11 @@ class ItemSearchAPI(MethodView):
                         items = Item.query.filter_by(user_id=user_id)
                         items = items.filter(Item.name.ilike(q + '%'))
                         total = len(items.all())
-                        items = items.order_by(Item.name).paginate(
-                            page, limit, error_out=False).items
+                        if limit and page:
+                            items = items.order_by(Item.name).paginate(
+                                page, limit, error_out=False).items
+                        else:
+                            items = items.order_by(Item.name).all()
 
                     if not items:
                         return make_response(), 204
@@ -981,7 +995,7 @@ shoppinglists_blueprint.add_url_rule(
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/',
     view_func=shopping_lists_api,
-    methods=['POST']
+    methods=['POST', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>',
@@ -996,7 +1010,7 @@ shoppinglists_blueprint.add_url_rule(
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>/items/',
     view_func=shopping_lists_id_items_api,
-    methods=['POST']
+    methods=['POST', 'GET']
 )
 shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/<int:id>/items/<int:item_id>',
@@ -1009,7 +1023,17 @@ shoppinglists_blueprint.add_url_rule(
     methods=['GET']
 )
 shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/search/shoppinglist/<string:q>',
+    view_func=shopping_lists_search_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
     '/v1/shoppinglists/search/item/<string:q>/<int:limit>/<int:page>',
+    view_func=items_search_api,
+    methods=['GET']
+)
+shoppinglists_blueprint.add_url_rule(
+    '/v1/shoppinglists/search/item/<string:q>',
     view_func=items_search_api,
     methods=['GET']
 )

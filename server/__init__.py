@@ -26,6 +26,22 @@ def create_app(config_name):
 
         return response
 
+    @app.errorhandler(404)
+    def handle_404(err):
+        response = {
+            "status": "fail",
+            "message": "Resource not found"
+        }
+        return make_response(jsonify(response)), 404
+
+    @app.errorhandler(500)
+    def handle_500(err):
+        response = {
+            "status": "fail",
+            "message": "Something went wrong."
+        }
+        return make_response(jsonify(response)), 500
+
     from .auth import auth_blueprint, shoppinglists_blueprint
     from .apiary.views import apiary
     app.register_blueprint(auth_blueprint)
